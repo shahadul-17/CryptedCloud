@@ -1,4 +1,5 @@
 
+CryptedCloud-Client/src/main/resources/google-drive-api/credentials.json
 CryptedCloud-Client/application-data/StoredCredential
 CryptedCloud-Client/target/*
 CryptedCloud-Client/temporary-files/*
