@@ -28,7 +28,9 @@ import com.cloud.crypted.client.core.Configuration;
 import com.cloud.crypted.client.core.events.GoogleDriveListener;
 import com.cloud.crypted.client.core.events.TaskListener;
 import com.cloud.crypted.client.core.models.CloudFileInformation;
+import com.cloud.crypted.client.core.models.SecurityQuestionInformation;
 import com.cloud.crypted.client.core.models.Task;
+import com.cloud.crypted.client.core.models.UserInformation;
 import com.cloud.crypted.client.core.services.BackgroundTask;
 import com.cloud.crypted.client.core.services.GoogleDriveService;
 import com.cloud.crypted.client.core.utilities.StringUtilities;
@@ -45,6 +47,7 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 	private WebView webView = null;
 	private SignInPanel signInPanel = null;
 	private SignUpPanel signUpPanel = null;
+	private AccountRecoveryPanel accountRecoveryPanel = null;
 	private CloudServicePanel cloudServicePanel = null;
 	
 	private JPanel panelStatus = null;
@@ -54,6 +57,7 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 	private static final Color DODGER_BLUE = new Color(30, 144, 255);
 	private static final Color ORANGE_RED = new Color(255, 69, 0);
 	
+	private UserInformation userInformation = null;
 	private GoogleDriveService googleDriveService = null;
 	
 	public Frame() throws Exception {
@@ -89,6 +93,9 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 		
 		signUpPanel = new SignUpPanel();
 		signUpPanel.setActionListener(this);
+		
+		accountRecoveryPanel = new AccountRecoveryPanel();
+		accountRecoveryPanel.setActionListener(this);
 		
 		panelStatus = new JPanel();
 		panelStatus.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
@@ -204,6 +211,48 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 		signUpTask.addTaskListener(this);
 		
 		Application.taskExecutor.addTask(signUpTask);
+	}
+	
+	private void retrieveUserInformation() {
+		changeContentPaneComponent(gifLoading);
+		setStatusText(true, "Please wait...");
+		setProgressBarStatusValue(-1);
+		
+		Task userInformationRetrievalTask = new BackgroundTask("retrieveUserInformation");
+		userInformationRetrievalTask.setParameters(googleDriveService.getGoogleDriveUser().getEmail(),
+			Application.CRYPTED_CLOUD_SERVICE
+		);
+		userInformationRetrievalTask.addTaskListener(this);
+		
+		Application.taskExecutor.addTask(userInformationRetrievalTask);
+	}
+	
+	private void accountRecoveryFirstPhase() {
+		changeContentPaneComponent(gifLoading);
+		setStatusText(true, "Please wait while your recovery information is validated...");
+		setProgressBarStatusValue(-1);
+		
+		Task accountRecoveryTask = new BackgroundTask("accountRecoveryFirstPhase");
+		accountRecoveryTask.setParameters(accountRecoveryPanel.getAnswers(), userInformation);
+		accountRecoveryTask.addTaskListener(this);
+		
+		Application.taskExecutor.addTask(accountRecoveryTask);
+	}
+	
+	private void accountRecoverySecondPhase() {
+		changeContentPaneComponent(gifLoading);
+		setStatusText(true, "Please wait while your recovery information is validated...");
+		setProgressBarStatusValue(-1);
+		
+		Task accountRecoveryTask = new BackgroundTask("accountRecoverySecondPhase");
+		accountRecoveryTask.setParameters(accountRecoveryPanel.getNewPassphrase(),
+			accountRecoveryPanel.getRePassphrase(),
+			accountRecoveryPanel.getAnswers(),
+			userInformation, Application.CRYPTED_CLOUD_SERVICE
+		);
+		accountRecoveryTask.addTaskListener(this);
+		
+		Application.taskExecutor.addTask(accountRecoveryTask);
 	}
 	
 	private void signOut() {
@@ -471,7 +520,38 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 			signUpPanel.setErrorMessage(null);
 			signInPanel.setErrorMessage(null);
 			
-			setStatusText(true, "SFADE registration successful.");
+			setStatusText(true, Configuration.get("title") + " registration successful.");
+			setProgressBarStatusValue(100);
+			changeContentPaneComponent(signInPanel);
+		} else if ("retrieveUserInformation".equalsIgnoreCase(task.getName())) {
+			userInformation = (UserInformation) result;
+			String[] securityQuestions = new String[3];
+			
+			int i = 0;
+			
+			for (SecurityQuestionInformation securityQuestionInformation : userInformation.getSecurityQuestionInformationList()) {
+				securityQuestions[i] = securityQuestionInformation.getQuestion();
+				
+				i++;
+			}
+			
+			accountRecoveryPanel.setErrorMessage(null);
+			accountRecoveryPanel.setEmail(googleDriveService.getGoogleDriveUser().getEmail());
+			accountRecoveryPanel.setSecurityQuestions(securityQuestions);
+			accountRecoveryPanel.clearAnswers();
+			accountRecoveryPanel.setContentPane(0);
+			
+			changeContentPaneComponent(accountRecoveryPanel);
+		} else if ("accountRecoveryFirstPhase".equalsIgnoreCase(task.getName())) {
+			setStatusText(true, "Please enter a new passphrase...");
+			setProgressBarStatusValue(-1);
+			accountRecoveryPanel.setErrorMessage(null);
+			accountRecoveryPanel.setContentPane(1);
+			changeContentPaneComponent(accountRecoveryPanel);
+		} else if ("accountRecoverySecondPhase".equalsIgnoreCase(task.getName())) {
+			userInformation = null;
+			
+			setStatusText(true, "Account recovery succeeded.");
 			setProgressBarStatusValue(100);
 			changeContentPaneComponent(signInPanel);
 		} else if ("refresh".equalsIgnoreCase(task.getName())) {
@@ -506,6 +586,26 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 			
 			changeContentPaneComponent(signUpPanel);
 			setStatusText(false, "An error occurred while we were signing you up...");
+			setProgressBarStatusValue(0);
+		} else if ("retrieveUserInformation".equalsIgnoreCase(task.getName())) {
+			signInPanel.setErrorMessage(exception.getMessage());
+			
+			changeContentPaneComponent(signInPanel);
+			setStatusText(false, "An error occurred...");
+			setProgressBarStatusValue(0);
+		} else if ("accountRecoveryFirstPhase".equalsIgnoreCase(task.getName())) {
+			accountRecoveryPanel.setErrorMessage("An error occurred during recovery information validation.");
+			accountRecoveryPanel.setContentPane(0);
+			
+			changeContentPaneComponent(accountRecoveryPanel);
+			setStatusText(false, exception.getMessage());
+			setProgressBarStatusValue(0);
+		} else if ("accountRecoverySecondPhase".equalsIgnoreCase(task.getName())) {
+			accountRecoveryPanel.setErrorMessage("An error occurred while setting your new passphrase.");
+			accountRecoveryPanel.setContentPane(1);
+			
+			changeContentPaneComponent(accountRecoveryPanel);
+			setStatusText(false, exception.getMessage());
 			setProgressBarStatusValue(0);
 		} else if ("refresh".equalsIgnoreCase(task.getName())) {
 			setStatusText(false, exception.getMessage());
@@ -582,11 +682,15 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 	@Override
 	public void actionPerformed(ActionEvent event) {
 		if (event.getSource() instanceof JLabel) {
+			if ("forgotPassphrase".equalsIgnoreCase(event.getActionCommand())) {
+				retrieveUserInformation();
+				
+				return;
+			}
+			
 			Component component = null;
 			
-			if ("forgotPassphrase".equalsIgnoreCase(event.getActionCommand())) {
-				component = signUpPanel;
-			} else if ("createNewAccount".equalsIgnoreCase(event.getActionCommand())) {
+			if ("createNewAccount".equalsIgnoreCase(event.getActionCommand())) {
 				component = signUpPanel;
 				
 				signUpPanel.setErrorMessage(null);
@@ -598,6 +702,7 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 				
 				signInWithDifferentGoogleDriveAccount();
 			} else if ("signInInstead".equalsIgnoreCase(event.getActionCommand())) {
+				userInformation = null;
 				component = signInPanel;
 				
 				signInPanel.setErrorMessage(null);
@@ -612,6 +717,10 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 				signIn();
 			} else if ("sign up".equalsIgnoreCase(button.getText())) {
 				signUp();
+			} else if ("next".equalsIgnoreCase(button.getText())) {
+				accountRecoveryFirstPhase();
+			} else if ("finish".equalsIgnoreCase(button.getText())) {
+				accountRecoverySecondPhase();
 			}
 		} else if (event.getSource() instanceof Button) {
 			Button button = (Button) event.getSource();

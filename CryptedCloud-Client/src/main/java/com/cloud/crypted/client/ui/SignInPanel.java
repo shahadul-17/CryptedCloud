@@ -36,11 +36,11 @@ public class SignInPanel extends JPanel implements MouseListener, ComponentListe
 	
 	private ActionListener actionListener;
 	
-	public SignInPanel() {
+	public SignInPanel() throws Exception {
 		initialize();
 	}
 	
-	private void initialize() {
+	private void initialize() throws Exception {
 		setLayout(null);
 		addComponentListener(this);
 		

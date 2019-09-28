@@ -12,9 +12,11 @@ import com.cloud.crypted.client.core.events.TaskListener;
 import com.cloud.crypted.client.core.models.CloudFileInformation;
 import com.cloud.crypted.client.core.models.FileAccessInformation;
 import com.cloud.crypted.client.core.models.FileInformation;
+import com.cloud.crypted.client.core.models.SecurityQuestionInformation;
 import com.cloud.crypted.client.core.models.Task;
 import com.cloud.crypted.client.core.models.UserInformation;
 import com.cloud.crypted.client.core.utilities.RandomKeyGenerator;
+import com.cloud.crypted.client.core.utilities.StringUtilities;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp.Browser;
 
 public class BackgroundTask implements Task {
@@ -78,9 +80,9 @@ public class BackgroundTask implements Task {
 		char[] passphrase = (char[]) parameters[1];
 		
 		String email = (String) parameters[0];
-		CryptedCloudService sfadeService = (CryptedCloudService) parameters[2];
+		CryptedCloudService cryptedCloudService = (CryptedCloudService) parameters[2];
 		
-		Object returnValue = sfadeService.getUserInformation(email);
+		Object returnValue = cryptedCloudService.getUserInformation(email);
 		
 		if (returnValue instanceof String) {
 			throw new Exception((String) returnValue);
@@ -92,13 +94,12 @@ public class BackgroundTask implements Task {
 			throw new Exception("Incorrect passphrase provided.");
 		}
 		
-		retrievePassphrase(email, sfadeService);
 		callTaskListener(true, null);
 	}
 	
-	private char[] retrievePassphrase(String email, CryptedCloudService sfadeService) throws Exception {
+	private char[] retrievePassphrase(String email, CryptedCloudService cryptedCloudService) throws Exception {
 		String[] ans = { "tom", "dhaka" };
-		Object returnValue = sfadeService.getUserInformation(email);
+		Object returnValue = cryptedCloudService.getUserInformation(email);
 		
 		if (returnValue instanceof String) {
 			throw new Exception((String) returnValue);
@@ -127,7 +128,7 @@ public class BackgroundTask implements Task {
 		
 		String email = (String) parameters[0];
 		String[] securityQuestionAndAnswerArray = (String[]) parameters[3];
-		CryptedCloudService sfadeService = (CryptedCloudService) parameters[4];
+		CryptedCloudService cryptedCloudService = (CryptedCloudService) parameters[4];
 		
 		UserInformation userInformation = getUserInformation(email, passphrase, rePassphrase, securityQuestionAndAnswerArray);
 		
@@ -135,11 +136,75 @@ public class BackgroundTask implements Task {
 			throw new Exception("Invalid registration data provided.");
 		}
 		
-		Object returnValue = sfadeService.createAccount(userInformation);
+		Object returnValue = cryptedCloudService.createAccount(userInformation);
 		
 		if (returnValue instanceof String) {
 			throw new Exception((String) returnValue);
 		}
+		
+		callTaskListener(true, null);
+	}
+	
+	private void retrieveUserInformation() throws Exception {
+		String email = (String) parameters[0];
+		CryptedCloudService cryptedCloudService = (CryptedCloudService) parameters[1];
+		
+		Object returnValue = cryptedCloudService.getUserInformation(email);
+		
+		if (returnValue instanceof String) {
+			throw new Exception((String) returnValue);
+		}
+		
+		callTaskListener(true, returnValue);
+	}
+	
+	private void accountRecoveryFirstPhase() throws Exception {
+		String[] answers = (String[]) parameters[0];
+		UserInformation userInformation = (UserInformation) parameters[1];
+		
+		List<SecurityQuestionInformation> securityQuestionInformationList = userInformation.getSecurityQuestionInformationList();
+		
+		int i = 0;
+		
+		for (SecurityQuestionInformation securityQuestionInformation : securityQuestionInformationList) {
+			answers[i] = answers[i].trim().toLowerCase();
+			
+			if (!BCrypt.checkpw(answers[i], securityQuestionInformation.getHashedAnswer())) {
+				throw new Exception("Incorrect recovery information provided.");
+			}
+			
+			i++;
+		}
+		
+		callTaskListener(true, null);
+	}
+	
+	private void accountRecoverySecondPhase() throws Exception {
+		char[] newPassphrase = (char[]) parameters[0];
+		char[] rePassphrase = (char[]) parameters[1];
+		
+		if (!validatePassphrase(newPassphrase, rePassphrase)) {
+			throw new Exception("Passphrase must be atleast 8 characters long and both 'New passphrase' and 'Re-passphrase' must match.");
+		}
+		
+		String[] answers = (String[]) parameters[2];
+		UserInformation userInformation = (UserInformation) parameters[3];
+		CryptedCloudService cryptedCloudService = (CryptedCloudService) parameters[4];
+		
+		String passphrase = userInformation.getEncryptedPassphrase();
+		
+		for (int i = answers.length - 1; i > -1; i--) {
+			System.out.println(i + "" + answers[i]);
+			
+			if (StringUtilities.isNullOrEmpty(answers[i])) {
+				continue;
+			}
+			
+			answers[i] = answers[i].trim().toLowerCase();
+			passphrase = AES.decrypt(answers[i].toCharArray(), passphrase);
+		}
+		
+		System.out.println("++++++++++ PASSS = " + passphrase);
 		
 		callTaskListener(true, null);
 	}
@@ -153,7 +218,7 @@ public class BackgroundTask implements Task {
 		char[] passphrase = (char[]) parameters[0];
 		
 		File localFile = (File) parameters[1];
-		CryptedCloudService sfadeService = (CryptedCloudService) parameters[2];
+		CryptedCloudService cryptedCloudService = (CryptedCloudService) parameters[2];
 		GoogleDriveService googleDriveService = (GoogleDriveService) parameters[3];
 		
 		char[] randomKey = RandomKeyGenerator.generate();
@@ -168,7 +233,7 @@ public class BackgroundTask implements Task {
 			return;
 		}
 		
-		Object returnValue = sfadeService.saveFileInformation(new FileInformation(0L, cloudFileID));
+		Object returnValue = cryptedCloudService.saveFileInformation(new FileInformation(0L, cloudFileID));
 		
 		if (returnValue instanceof String) {
 			throw new Exception((String) returnValue);
@@ -181,7 +246,7 @@ public class BackgroundTask implements Task {
 			fileInformation.getCloudFileID(), "owner", encryptedRandomKey
 		);
 		
-		returnValue = sfadeService.saveFileAccessInformation(fileAccessInformation);
+		returnValue = cryptedCloudService.saveFileAccessInformation(fileAccessInformation);
 		
 		if (returnValue instanceof String) {
 			throw new Exception((String) returnValue);
@@ -195,20 +260,20 @@ public class BackgroundTask implements Task {
 		
 		String downloadLocation = (String) parameters[1];
 		CloudFileInformation cloudFileInformation = (CloudFileInformation) parameters[2];
-		CryptedCloudService sfadeService = (CryptedCloudService) parameters[3];
+		CryptedCloudService cryptedCloudService = (CryptedCloudService) parameters[3];
 		GoogleDriveService googleDriveService = (GoogleDriveService) parameters[4];
 		
-		boolean fileInformationExists = sfadeService.fileInformationExists(cloudFileInformation.getID());
+		boolean fileInformationExists = cryptedCloudService.fileInformationExists(cloudFileInformation.getID());
 		
 		if (fileInformationExists) {
-			Object returnValue = sfadeService.getUserInformation(googleDriveService.getGoogleDriveUser().getEmail());
+			Object returnValue = cryptedCloudService.getUserInformation(googleDriveService.getGoogleDriveUser().getEmail());
 			
 			if (returnValue instanceof String) {
 				throw new Exception((String) returnValue);
 			}
 			
 			UserInformation userInformation = (UserInformation) returnValue;
-			returnValue = sfadeService.getFileAccessInformation(googleDriveService.getGoogleDriveUser().getEmail(), cloudFileInformation.getID());
+			returnValue = cryptedCloudService.getFileAccessInformation(googleDriveService.getGoogleDriveUser().getEmail(), cloudFileInformation.getID());
 			
 			if (returnValue instanceof String) {
 				throw new Exception((String) returnValue);
@@ -239,14 +304,14 @@ public class BackgroundTask implements Task {
 	private void share() throws Exception {
 		String email = (String) parameters[0];		// email of the user want to share with...
 		CloudFileInformation cloudFileInformation = (CloudFileInformation) parameters[1];
-		CryptedCloudService sfadeService = (CryptedCloudService) parameters[2];
+		CryptedCloudService cryptedCloudService = (CryptedCloudService) parameters[2];
 		GoogleDriveService googleDriveService = (GoogleDriveService) parameters[3];
 		
-		boolean fileInformationExists = sfadeService.fileInformationExists(cloudFileInformation.getID());
+		boolean fileInformationExists = cryptedCloudService.fileInformationExists(cloudFileInformation.getID());
 		
 		if (fileInformationExists) {	// if the file exists in SFADE database, then it is encrypted...
 			// getting file access information of currently logged in user...
-			Object returnValue = sfadeService.getFileAccessInformation(googleDriveService.getGoogleDriveUser().getEmail(), cloudFileInformation.getID());
+			Object returnValue = cryptedCloudService.getFileAccessInformation(googleDriveService.getGoogleDriveUser().getEmail(), cloudFileInformation.getID());
 			
 			if (returnValue instanceof String) {
 				throw new Exception((String) returnValue);
@@ -257,7 +322,7 @@ public class BackgroundTask implements Task {
 			// if user is the owner of this file, then he/she is allowed to share...
 			if ("owner".equalsIgnoreCase(fileAccessInformation.getUserRole())) {
 				// getting information of user with whom the file will be shared...
-				returnValue = sfadeService.getUserInformation(email, true,
+				returnValue = cryptedCloudService.getUserInformation(email, true,
 					googleDriveService.getGoogleDriveUser().getFirstName(),
 					googleDriveService.getGoogleDriveUser().getEmail()
 				);
@@ -275,7 +340,7 @@ public class BackgroundTask implements Task {
 				String encryptedRandomKey = new RSA("", userInformation.getPublicKey()).encrypt(randomKey);
 				
 				// saving new file access...
-				sfadeService.saveFileAccessInformation(new FileAccessInformation(
+				cryptedCloudService.saveFileAccessInformation(new FileAccessInformation(
 					userInformation.getEmail(), fileAccessInformation.getCloudFileID(),
 					"writer", encryptedRandomKey
 				));
@@ -290,13 +355,13 @@ public class BackgroundTask implements Task {
 	
 	private void delete() throws Exception {
 		CloudFileInformation cloudFileInformation = (CloudFileInformation) parameters[0];
-		CryptedCloudService sfadeService = (CryptedCloudService) parameters[1];
+		CryptedCloudService cryptedCloudService = (CryptedCloudService) parameters[1];
 		GoogleDriveService googleDriveService = (GoogleDriveService) parameters[2];
 		
-		boolean fileInformationExists = sfadeService.fileInformationExists(cloudFileInformation.getID());
+		boolean fileInformationExists = cryptedCloudService.fileInformationExists(cloudFileInformation.getID());
 		
 		if (fileInformationExists) {
-			Object returnValue = sfadeService.getFileAccessInformation(googleDriveService.getGoogleDriveUser().getEmail(), cloudFileInformation.getID());
+			Object returnValue = cryptedCloudService.getFileAccessInformation(googleDriveService.getGoogleDriveUser().getEmail(), cloudFileInformation.getID());
 			
 			if (returnValue instanceof String) {
 				throw new Exception((String) returnValue);
@@ -305,7 +370,7 @@ public class BackgroundTask implements Task {
 			FileAccessInformation fileAccessInformation = (FileAccessInformation) returnValue;
 			
 			if ("owner".equalsIgnoreCase(fileAccessInformation.getUserRole())) {
-				returnValue = sfadeService.deleteFileAccessInformationSet(fileAccessInformation.getCloudFileID());
+				returnValue = cryptedCloudService.deleteFileAccessInformationSet(fileAccessInformation.getCloudFileID());
 				
 				if (returnValue instanceof String) {
 					throw new Exception((String) returnValue);
@@ -330,6 +395,12 @@ public class BackgroundTask implements Task {
 				signInWithDifferentGoogleDriveAccount();
 			} else if ("signUp".equalsIgnoreCase(name)) {
 				signUp();
+			} else if ("retrieveUserInformation".equalsIgnoreCase(name)) {
+				retrieveUserInformation();
+			} else if ("accountRecoveryFirstPhase".equalsIgnoreCase(name)) {
+				accountRecoveryFirstPhase();
+			} else if ("accountRecoverySecondPhase".equalsIgnoreCase(name)) {
+				accountRecoverySecondPhase();
 			} else if ("refresh".equalsIgnoreCase(name)) {
 				refresh();
 			} else if ("upload".equalsIgnoreCase(name)) {
@@ -375,6 +446,9 @@ public class BackgroundTask implements Task {
 			String encryptedPassphrase = new String(passphrase);
 			
 			for (int i = 0; i < securityQuestionAndAnswerArray.length; i += 2) {
+				securityQuestionAndAnswerArray[i] = securityQuestionAndAnswerArray[i].trim();
+				securityQuestionAndAnswerArray[i + 1] = securityQuestionAndAnswerArray[i + 1].trim().toLowerCase();
+				
 				if (securityQuestionAndAnswerArray[i].isEmpty() || securityQuestionAndAnswerArray[i + 1].isEmpty()) {
 					continue;
 				}

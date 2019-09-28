@@ -56,7 +56,7 @@ public class CloudServicePanel extends JPanel implements ActionListener, Compone
 		panelControls.setBackground(Color.WHITE);
 		((FlowLayout) panelControls.getLayout()).setAlignment(FlowLayout.LEFT);
 		panelControls.setPreferredSize(new Dimension(160, 0));
-		add(panelControls, BorderLayout.EAST);
+		add(panelControls, BorderLayout.WEST);
 		
 		buttonRefresh = createButton("refresh.png", "Refresh", "Refresh");
 		buttonRefresh.setEnabled(true);

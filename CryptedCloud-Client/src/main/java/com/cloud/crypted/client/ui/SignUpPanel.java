@@ -43,11 +43,11 @@ public class SignUpPanel extends JPanel implements MouseListener, ComponentListe
 	
 	private ActionListener actionListener;
 	
-	public SignUpPanel() {
+	public SignUpPanel() throws Exception {
 		initialize();
 	}
 	
-	private void initialize() {
+	private void initialize() throws Exception {
 		setLayout(null);
 		addComponentListener(this);
 		
@@ -253,9 +253,9 @@ public class SignUpPanel extends JPanel implements MouseListener, ComponentListe
 	
 	public String[] getSecurityQuestionAndAnswerArray() {
 		return new String[] {
-			textFieldFirstSecurityQuestion.getText().trim(), textFieldFirstAnswer.getText(),
-			textFieldSecondSecurityQuestion.getText().trim(), textFieldSecondAnswer.getText(),
-			textFieldThirdSecurityQuestion.getText().trim(), textFieldThirdAnswer.getText()
+			textFieldFirstSecurityQuestion.getText(), textFieldFirstAnswer.getText(),
+			textFieldSecondSecurityQuestion.getText(), textFieldSecondAnswer.getText(),
+			textFieldThirdSecurityQuestion.getText(), textFieldThirdAnswer.getText()
 		};
 	}
 	
