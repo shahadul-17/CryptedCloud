@@ -230,6 +230,9 @@ public class AccountRecoveryPanel extends JPanel implements MouseListener, Compo
 					
 					contentPanes[0].remove(labelSignInInstead);
 					contentPanes[1].add(labelSignInInstead);
+					
+					newPassphraseField.setText("");
+					rePassphraseField.setText("");
 				}
 				
 				revalidate();

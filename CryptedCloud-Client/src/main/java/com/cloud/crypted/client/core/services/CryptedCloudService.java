@@ -19,6 +19,13 @@ import com.cloud.crypted.client.core.models.SecurityQuestionInformation;
 import com.cloud.crypted.client.core.models.UserInformation;
 import com.cloud.crypted.client.core.utilities.StringUtilities;
 
+/**
+ * This class was written like sh*t.
+ * Need to refactor the entire class.
+ * 
+ * @author Shahadul Alam
+ *
+ */
 public class CryptedCloudService {
 	
 	public CryptedCloudService() { }
@@ -26,7 +33,82 @@ public class CryptedCloudService {
 	public Object createAccount(UserInformation userInformation) {
 		StringBuilder responseBuilder = new StringBuilder(Integer.parseInt(Configuration.get("collection.initialCapacity")));
 		
-		if (sendHTTPRequest("POST", Configuration.get("service.host") + '/' + Configuration.get("title") + "/v" + Configuration.get("version") + '/' + "users", userInformation, responseBuilder) == 200) {
+		if (sendHTTPRequest("POST", Configuration.get("service.host") + Configuration.get("title") + "/v" + Configuration.get("version") + '/' + "users", userInformation, responseBuilder) == 200) {
+			Map<?, ?> response = null;
+			
+			try {
+				response = Application.OBJECT_MAPPER.readValue(responseBuilder.toString(), Map.class);
+			} catch (Exception exception) {
+				exception.printStackTrace();
+				
+				return exception.getMessage();
+			}
+			
+			Object errorMessage = response.get("error");
+			
+			if (errorMessage == null) {
+				Map<?, ?> userInformationMap = (Map<?, ?>) response.get("userInformation");
+				
+				try {
+					userInformation.setUserID((Integer) userInformationMap.get("userID"));
+				} catch (Exception exception) {
+					exception.printStackTrace();
+					
+					userInformation.setUserID((Long) userInformationMap.get("userID"));
+				}
+				
+				userInformation.setCloudService((String) userInformationMap.get("cloudService"));
+				userInformation.setEmail((String) userInformationMap.get("email"));
+				userInformation.setHashedPassphrase((String) userInformationMap.get("hashedPassphrase"));
+				userInformation.setEncryptedPassphrase((String) userInformationMap.get("encryptedPassphrase"));
+				userInformation.setEncryptedPrivateKey((String) userInformationMap.get("encryptedPrivateKey"));
+				userInformation.setPublicKey((String) userInformationMap.get("publicKey"));
+				
+				List<?> temporarySecurityQuestionInformationList = (List<?>) userInformationMap.get("securityQuestionInformationList");
+				List<SecurityQuestionInformation> securityQuestionInformationList = null;
+				
+				if (temporarySecurityQuestionInformationList != null && temporarySecurityQuestionInformationList.size() != 0) {
+					securityQuestionInformationList = new LinkedList<SecurityQuestionInformation>();
+					
+					for (Object securityQuestionInformationObject : temporarySecurityQuestionInformationList) {
+						if (securityQuestionInformationObject == null) {
+							continue;
+						}
+						
+						Map<?, ?> securityQuestionInformationMap = (Map<?, ?>) securityQuestionInformationObject;
+						SecurityQuestionInformation securityQuestionInformation = new SecurityQuestionInformation();
+						Object securityQuestionIDObject = securityQuestionInformationMap.get("securityQuestionID");
+						
+						long securityQuestionID = 0L;
+						
+						if (securityQuestionIDObject instanceof Integer) {
+							securityQuestionID = (Integer) securityQuestionIDObject;
+						} else if (securityQuestionIDObject instanceof Long) {
+							securityQuestionID = (Long) securityQuestionIDObject;
+						}
+						
+						securityQuestionInformation.setSecurityQuestionID(securityQuestionID);
+						securityQuestionInformation.setQuestion((String) securityQuestionInformationMap.get("question"));
+						securityQuestionInformation.setHashedAnswer((String) securityQuestionInformationMap.get("hashedAnswer"));
+						securityQuestionInformationList.add((SecurityQuestionInformation) securityQuestionInformation);
+					}
+				}
+				
+				userInformation.setSecurityQuestionInformationList(securityQuestionInformationList);
+				
+				return userInformation;
+			} else {
+				return errorMessage;
+			}
+		}
+		
+		return "An error occurred while connecting to " + Configuration.get("title") + " server.";
+	}
+	
+	public Object updateAccount(UserInformation userInformation) {
+		StringBuilder responseBuilder = new StringBuilder(Integer.parseInt(Configuration.get("collection.initialCapacity")));
+		
+		if (sendHTTPRequest("PUT", Configuration.get("service.host") + "v" + Configuration.get("version") + '/' + "users", userInformation, responseBuilder) == 200) {
 			Map<?, ?> response = null;
 			
 			try {
@@ -105,7 +187,7 @@ public class CryptedCloudService {
 	public Object getUserInformation(String email, boolean sendEmail, String requesterName, String requesterEmail) {
 		StringBuilder responseBuilder = new StringBuilder(Integer.parseInt(Configuration.get("collection.initialCapacity")));
 		
-		String url = Configuration.get("service.host") + '/' + Configuration.get("title") + "/v" + Configuration.get("version") + '/' + "users?email=" + email;
+		String url = Configuration.get("service.host") + "v" + Configuration.get("version") + '/' + "users?email=" + email;
 		
 		if (sendEmail && !StringUtilities.isNullOrEmpty(requesterName) &&
 				!StringUtilities.isNullOrEmpty(requesterEmail)) {
@@ -191,7 +273,7 @@ public class CryptedCloudService {
 	public Object saveFileInformation(FileInformation fileInformation) {
 		StringBuilder responseBuilder = new StringBuilder(Integer.parseInt(Configuration.get("collection.initialCapacity")));
 		
-		if (sendHTTPRequest("POST", Configuration.get("service.host") + '/' + Configuration.get("title") + "/v" + Configuration.get("version") + '/' + "files", fileInformation, responseBuilder) == 200) {
+		if (sendHTTPRequest("POST", Configuration.get("service.host") + "v" + Configuration.get("version") + '/' + "files", fileInformation, responseBuilder) == 200) {
 			Map<?, ?> response = null;
 			
 			try {
@@ -230,7 +312,7 @@ public class CryptedCloudService {
 	public boolean fileInformationExists(String cloudFileID) {
 		StringBuilder responseBuilder = new StringBuilder(Integer.parseInt(Configuration.get("collection.initialCapacity")));
 		
-		if (sendHTTPRequest("GET", Configuration.get("service.host") + '/' + Configuration.get("title") + "/v" + Configuration.get("version") + '/' + "files?cloudFileID=" + cloudFileID + "&ping=true", (String) null, responseBuilder) == 200) {
+		if (sendHTTPRequest("GET", Configuration.get("service.host") + "v" + Configuration.get("version") + '/' + "files?cloudFileID=" + cloudFileID + "&ping=true", (String) null, responseBuilder) == 200) {
 			Map<?, ?> response = null;
 			
 			try {
@@ -250,7 +332,7 @@ public class CryptedCloudService {
 	public Object getFileInformation(String cloudFileID) {
 		StringBuilder responseBuilder = new StringBuilder(Integer.parseInt(Configuration.get("collection.initialCapacity")));
 		
-		if (sendHTTPRequest("GET", Configuration.get("service.host") + '/' + Configuration.get("title") + "/v" + Configuration.get("version") + '/' + "files?cloudFileID=" + cloudFileID, (String) null, responseBuilder) == 200) {
+		if (sendHTTPRequest("GET", Configuration.get("service.host") + "v" + Configuration.get("version") + '/' + "files?cloudFileID=" + cloudFileID, (String) null, responseBuilder) == 200) {
 			Map<?, ?> response = null;
 			
 			try {
@@ -289,7 +371,7 @@ public class CryptedCloudService {
 	public Object saveFileAccessInformation(FileAccessInformation fileAccessInformation) {
 		StringBuilder responseBuilder = new StringBuilder(Integer.parseInt(Configuration.get("collection.initialCapacity")));
 		
-		if (sendHTTPRequest("POST", Configuration.get("service.host") + '/' + Configuration.get("title") + "/v" + Configuration.get("version") + '/' + "fileAccessSet", fileAccessInformation, responseBuilder) == 200) {
+		if (sendHTTPRequest("POST", Configuration.get("service.host") + "v" + Configuration.get("version") + '/' + "fileAccessSet", fileAccessInformation, responseBuilder) == 200) {
 			Map<?, ?> response = null;
 			
 			try {
@@ -323,7 +405,7 @@ public class CryptedCloudService {
 	public Object getFileAccessInformation(String email, String cloudFileID) {
 		StringBuilder responseBuilder = new StringBuilder(Integer.parseInt(Configuration.get("collection.initialCapacity")));
 		
-		if (sendHTTPRequest("GET", Configuration.get("service.host") + '/' + Configuration.get("title") + "/v" + Configuration.get("version") + '/' + "fileAccessSet?email=" + email + "&cloudFileID=" + cloudFileID, (String) null, responseBuilder) == 200) {
+		if (sendHTTPRequest("GET", Configuration.get("service.host") + "v" + Configuration.get("version") + '/' + "fileAccessSet?email=" + email + "&cloudFileID=" + cloudFileID, (String) null, responseBuilder) == 200) {
 			Map<?, ?> response = null;
 			
 			try {
@@ -354,7 +436,47 @@ public class CryptedCloudService {
 		return "An error occurred while connecting to " + Configuration.get("title") + " server.";
 	}
 	
-	public Object getFileAccessInformationSet(String cloudFileID) {
+	public Object getFileAccessInformationSetByEmail(String email) {
+		StringBuilder responseBuilder = new StringBuilder(Integer.parseInt(Configuration.get("collection.initialCapacity")));
+		
+		if (sendHTTPRequest("GET", Configuration.get("service.host") + "v" + Configuration.get("version") + '/' + "fileAccessSet?email=" + email, (String) null, responseBuilder) == 200) {
+			Map<?, ?> response = null;
+			
+			try {
+				response = Application.OBJECT_MAPPER.readValue(responseBuilder.toString(), Map.class);
+			} catch (Exception exception) {
+				exception.printStackTrace();
+				
+				return exception.getMessage();
+			}
+			
+			Object errorMessage = response.get("error");
+			
+			if (errorMessage == null) {
+				List<?> fileAccessInformationList = (List<?>) response.get("fileAccessInformationSet");
+				Set<FileAccessInformation> fileAccessInformationSet = new HashSet<FileAccessInformation>(fileAccessInformationList.size());
+				
+				for (Object fileAccessInformationObject : fileAccessInformationList) {
+					Map<?, ?> fileAccessInformationMap = (Map<?, ?>) fileAccessInformationObject;
+					
+					FileAccessInformation fileAccessInformation = new FileAccessInformation();
+					fileAccessInformation.setEmail((String) fileAccessInformationMap.get("email"));
+					fileAccessInformation.setCloudFileID((String) fileAccessInformationMap.get("cloudFileID"));
+					fileAccessInformation.setUserRole((String) fileAccessInformationMap.get("userRole"));
+					fileAccessInformation.setEncryptedRandomKey((String) fileAccessInformationMap.get("encryptedRandomKey"));
+					fileAccessInformationSet.add(fileAccessInformation);
+				}
+				
+				return fileAccessInformationSet;
+			} else {
+				return errorMessage;
+			}
+		}
+		
+		return "An error occurred while connecting to " + Configuration.get("title") + " server.";
+	}
+	
+	public Object getFileAccessInformationSetByCloudFileID(String cloudFileID) {
 		StringBuilder responseBuilder = new StringBuilder(Integer.parseInt(Configuration.get("collection.initialCapacity")));
 		
 		if (sendHTTPRequest("GET", Configuration.get("service.host") + "fileAccessSet?cloudFileID=" + cloudFileID, (String) null, responseBuilder) == 200) {
@@ -397,7 +519,7 @@ public class CryptedCloudService {
 	public Object deleteFileAccessInformationSet(String cloudFileID) {
 		StringBuilder responseBuilder = new StringBuilder(Integer.parseInt(Configuration.get("collection.initialCapacity")));
 		
-		if (sendHTTPRequest("DELETE", Configuration.get("service.host") + '/' + Configuration.get("title") + "/v" + Configuration.get("version") + '/' + "fileAccessSet?cloudFileID=" + cloudFileID, (String) null, responseBuilder) == 200) {
+		if (sendHTTPRequest("DELETE", Configuration.get("service.host") + "v" + Configuration.get("version") + '/' + "fileAccessSet?cloudFileID=" + cloudFileID, (String) null, responseBuilder) == 200) {
 			Map<?, ?> response = null;
 			
 			try {
@@ -504,7 +626,7 @@ public class CryptedCloudService {
 		httpURLConnection.setInstanceFollowRedirects(false);
 		httpURLConnection.setUseCaches(false);
 		
-		if ("POST".equalsIgnoreCase(method)) {
+		if ("POST".equalsIgnoreCase(method) || "PUT".equalsIgnoreCase(method)) {
 			httpURLConnection.setDoOutput(true);
 			httpURLConnection.setRequestProperty("Content-Type", "application/json");
 			httpURLConnection.setRequestProperty("Content-Length", "" + requestBody.length());

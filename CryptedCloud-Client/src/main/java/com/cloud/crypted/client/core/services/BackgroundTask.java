@@ -3,6 +3,7 @@ package com.cloud.crypted.client.core.services;
 import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import com.cloud.crypted.client.Application;
 import com.cloud.crypted.client.core.cryptography.AES;
@@ -97,7 +98,7 @@ public class BackgroundTask implements Task {
 		callTaskListener(true, null);
 	}
 	
-	private char[] retrievePassphrase(String email, CryptedCloudService cryptedCloudService) throws Exception {
+	/*private char[] retrievePassphrase(String email, CryptedCloudService cryptedCloudService) throws Exception {
 		String[] ans = { "tom", "dhaka" };
 		Object returnValue = cryptedCloudService.getUserInformation(email);
 		
@@ -115,7 +116,7 @@ public class BackgroundTask implements Task {
 		System.out.println(passphrase);
 		
 		return passphrase.toCharArray();
-	}
+	}*/
 	
 	private void signInWithDifferentGoogleDriveAccount() throws Exception {
 		GoogleDriveService.removeCredential();
@@ -194,8 +195,6 @@ public class BackgroundTask implements Task {
 		String passphrase = userInformation.getEncryptedPassphrase();
 		
 		for (int i = answers.length - 1; i > -1; i--) {
-			System.out.println(i + "" + answers[i]);
-			
 			if (StringUtilities.isNullOrEmpty(answers[i])) {
 				continue;
 			}
@@ -204,7 +203,54 @@ public class BackgroundTask implements Task {
 			passphrase = AES.decrypt(answers[i].toCharArray(), passphrase);
 		}
 		
-		System.out.println("++++++++++ PASSS = " + passphrase);
+		String newHashedPassphrase = BCrypt.hashpw(new String(newPassphrase), BCrypt.gensalt());
+		String newEncryptedPassphrase = new String(newPassphrase);
+		
+		for (int i = 0; i < answers.length; i++) {
+			if (StringUtilities.isNullOrEmpty(answers[i])) {
+				continue;
+			}
+			
+			newEncryptedPassphrase = AES.encrypt(answers[i].toCharArray(), newEncryptedPassphrase);
+		}
+		
+		userInformation.setHashedPassphrase(newHashedPassphrase);
+		userInformation.setEncryptedPassphrase(newEncryptedPassphrase);
+		userInformation.setEncryptedPrivateKey(AES.encrypt(newPassphrase, AES.decrypt(passphrase.toCharArray(), userInformation.getEncryptedPrivateKey())));
+		
+		Object returnValue = cryptedCloudService.updateAccount(userInformation);		// saving user information... IT DOES NOT WORK... NEEDS FIX....
+		
+		if (returnValue instanceof String) {
+			throw new Exception((String) returnValue);
+		}
+		
+		// update file info...
+		returnValue = cryptedCloudService.getFileAccessInformationSetByEmail(userInformation.getEmail());
+		
+		if (returnValue instanceof String) {
+			throw new Exception((String) returnValue);
+		}
+		
+		@SuppressWarnings("unchecked")
+		Set<FileAccessInformation> fileAccessInformationSet = (Set<FileAccessInformation>) returnValue;
+		
+		for (FileAccessInformation fileAccessInformation : fileAccessInformationSet) {
+			if ("owner".equalsIgnoreCase(fileAccessInformation.getUserRole())) {
+				fileAccessInformation.setEncryptedRandomKey(
+					AES.encrypt(newPassphrase,
+						AES.decrypt(passphrase.toCharArray(),
+							fileAccessInformation.getEncryptedRandomKey()
+						)
+					)
+				);
+				
+				returnValue = cryptedCloudService.saveFileAccessInformation(fileAccessInformation);
+				
+				if (returnValue instanceof String) {
+					throw new Exception((String) returnValue);
+				}
+			}
+		}
 		
 		callTaskListener(true, null);
 	}

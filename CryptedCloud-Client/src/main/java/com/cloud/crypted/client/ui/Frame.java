@@ -68,7 +68,7 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 	private void initialize() throws Exception {
 		setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/images/icon.png")));
 		setTitle(Configuration.get("title") + " v" + Configuration.get("version"));
-		setSize(1000, 750);
+		setSize(888, 700);
 		setMinimumSize(getSize());
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
