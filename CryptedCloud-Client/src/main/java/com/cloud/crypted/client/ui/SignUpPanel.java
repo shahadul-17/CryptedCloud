@@ -94,7 +94,6 @@ public class SignUpPanel extends JPanel implements MouseListener, ComponentListe
 		textFieldLastName.setEditable(false);
 		textFieldLastName.setBackground(Color.WHITE);
 		textFieldLastName.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		textFieldLastName.setColumns(10);
 		textFieldLastName.setBounds(287, 119, 255, 25);
 		contentPane.add(textFieldLastName);
 		
@@ -107,7 +106,6 @@ public class SignUpPanel extends JPanel implements MouseListener, ComponentListe
 		textFieldEmail.setEditable(false);
 		textFieldEmail.setBackground(Color.WHITE);
 		textFieldEmail.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		textFieldEmail.setColumns(10);
 		textFieldEmail.setBounds(22, 177, 520, 25);
 		contentPane.add(textFieldEmail);
 		
@@ -118,7 +116,6 @@ public class SignUpPanel extends JPanel implements MouseListener, ComponentListe
 		
 		passphraseField = new JPasswordField();
 		passphraseField.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		passphraseField.setColumns(10);
 		passphraseField.setBounds(22, 235, 520, 25);
 		contentPane.add(passphraseField);
 		
@@ -129,7 +126,6 @@ public class SignUpPanel extends JPanel implements MouseListener, ComponentListe
 		
 		rePassphraseField = new JPasswordField();
 		rePassphraseField.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		rePassphraseField.setColumns(10);
 		rePassphraseField.setBounds(22, 293, 520, 25);
 		contentPane.add(rePassphraseField);
 		
@@ -151,7 +147,6 @@ public class SignUpPanel extends JPanel implements MouseListener, ComponentListe
 		
 		textFieldFirstAnswer = new JTextField();
 		textFieldFirstAnswer.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		textFieldFirstAnswer.setColumns(10);
 		textFieldFirstAnswer.setBackground(Color.WHITE);
 		textFieldFirstAnswer.setBounds(287, 354, 255, 25);
 		contentPane.add(textFieldFirstAnswer);
@@ -174,7 +169,6 @@ public class SignUpPanel extends JPanel implements MouseListener, ComponentListe
 		
 		textFieldSecondAnswer = new JTextField();
 		textFieldSecondAnswer.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		textFieldSecondAnswer.setColumns(10);
 		textFieldSecondAnswer.setBackground(Color.WHITE);
 		textFieldSecondAnswer.setBounds(287, 415, 255, 25);
 		contentPane.add(textFieldSecondAnswer);
@@ -197,7 +191,6 @@ public class SignUpPanel extends JPanel implements MouseListener, ComponentListe
 		
 		textFieldThirdAnswer = new JTextField();
 		textFieldThirdAnswer.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		textFieldThirdAnswer.setColumns(10);
 		textFieldThirdAnswer.setBackground(Color.WHITE);
 		textFieldThirdAnswer.setBounds(287, 476, 255, 25);
 		contentPane.add(textFieldThirdAnswer);

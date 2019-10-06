@@ -17,6 +17,7 @@ public class CloudFileInformation {
 	
 	private String id;
 	private String name;
+	private String iconURL;
 	private ImageIcon icon;
 	
 	// private static final int ICON_SIZE = 24;
@@ -68,11 +69,17 @@ public class CloudFileInformation {
 	}
 	
 	public void setIcon(String iconURL) {
+		this.iconURL = iconURL;
+		
 		try {
 			icon = getImageIcon(iconURL);
 		} catch (Exception exception) {
 			exception.printStackTrace();
 		}
+	}
+	
+	public String getIconURL() {
+		return iconURL;
 	}
 	
 	private static ImageIcon loadImageIconFromURL(String iconURL) throws Exception {

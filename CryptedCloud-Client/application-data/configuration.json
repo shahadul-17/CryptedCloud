@@ -7,5 +7,8 @@
 	"service.host": "http://localhost:8080/",
 	"aes.secretKeyLength": "16",
 	"temporaryFilePath": "temporary-files",
-	"pbeKeySpec.iterationCount": "65536"
+	"pbeKeySpec.iterationCount": "65536",
+	"encryptedRandomKey.signature.length": "5",
+	"encryptedRandomKey.signature.aes": "00000",
+	"encryptedRandomKey.signature.rsa": "00001"
 }

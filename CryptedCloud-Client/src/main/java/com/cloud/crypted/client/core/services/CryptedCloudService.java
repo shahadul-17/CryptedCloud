@@ -33,7 +33,7 @@ public class CryptedCloudService {
 	public Object createAccount(UserInformation userInformation) {
 		StringBuilder responseBuilder = new StringBuilder(Integer.parseInt(Configuration.get("collection.initialCapacity")));
 		
-		if (sendHTTPRequest("POST", Configuration.get("service.host") + Configuration.get("title") + "/v" + Configuration.get("version") + '/' + "users", userInformation, responseBuilder) == 200) {
+		if (sendHTTPRequest("POST", Configuration.get("service.host") + "v" + Configuration.get("version") + '/' + "users", userInformation, responseBuilder) == 200) {
 			Map<?, ?> response = null;
 			
 			try {
@@ -227,9 +227,6 @@ public class CryptedCloudService {
 				userInformation.setPublicKey((String) userInformationMap.get("publicKey"));
 				
 				List<?> temporarySecurityQuestionInformationList = (List<?>) userInformationMap.get("securityQuestionInformationList");
-				
-				System.out.println(temporarySecurityQuestionInformationList);
-				
 				List<SecurityQuestionInformation> securityQuestionInformationList = null;
 				
 				if (temporarySecurityQuestionInformationList != null && temporarySecurityQuestionInformationList.size() != 0) {

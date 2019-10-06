@@ -55,17 +55,22 @@ public class CloudFileExplorer extends JPanel {
 			return false;
 		}
 		
-		CloudFile file = null;
+		CloudFile file = fileMap.get(fileInformation.getID());
 		
-		try {
-			file = new CloudFile(fileInformation);
-		} catch (Exception exception) {
-			exception.printStackTrace();
+		if (file == null) {
+			try {
+				file = new CloudFile(fileInformation);
+			} catch (Exception exception) {
+				exception.printStackTrace();
+				
+				return false;
+			}
 			
-			return false;
+			fileMap.put(fileInformation.getID(), file);
+		} else {
+			file.updateCloudFileInformation(fileInformation);
 		}
 		
-		fileMap.put(fileInformation.getID(), file);
 		add(file);
 		
 		return true;

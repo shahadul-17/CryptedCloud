@@ -21,7 +21,7 @@ import javax.swing.border.EmptyBorder;
 
 import com.cloud.crypted.client.core.Configuration;
 
-public class SignInPanel extends JPanel implements MouseListener, ComponentListener {
+public class SignInPanel extends JPanel implements MouseListener, ActionListener, ComponentListener {
 	
 	private static final long serialVersionUID = -8375992071633206289L;
 	
@@ -75,7 +75,6 @@ public class SignInPanel extends JPanel implements MouseListener, ComponentListe
 		textFieldEmail.setEditable(false);
 		textFieldEmail.setBackground(Color.WHITE);
 		textFieldEmail.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		textFieldEmail.setColumns(10);
 		textFieldEmail.setBounds(72, 171, 400, 25);
 		contentPane.add(textFieldEmail);
 		
@@ -84,10 +83,10 @@ public class SignInPanel extends JPanel implements MouseListener, ComponentListe
 		labelPassphrase.setBounds(72, 206, 100, 20);
 		contentPane.add(labelPassphrase);
 		
-		passphraseField = new JPasswordField("12345678");
+		passphraseField = new JPasswordField();
 		passphraseField.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		passphraseField.setColumns(10);
 		passphraseField.setBounds(72, 229, 400, 25);
+		passphraseField.addActionListener(this);
 		contentPane.add(passphraseField);
 		
 		labelForgotPassphrase = new JLabel("<html><u>Forgot passphrase?</u></html>");
@@ -173,6 +172,17 @@ public class SignInPanel extends JPanel implements MouseListener, ComponentListe
 	}
 	
 	@Override
+	public void actionPerformed(ActionEvent event) {
+		if (actionListener == null) {
+			return;
+		}
+		
+		if (event.getSource().equals(passphraseField)) {
+			actionListener.actionPerformed(new ActionEvent(buttonSignIn, ActionEvent.ACTION_PERFORMED, null));
+		}
+	}
+	
+	@Override
 	public void componentResized(ComponentEvent event) {
 		int x = (int) ((getWidth() / 2.0) - (contentPane.getWidth() / 2.0));
 		int y = (int) ((getHeight() / 2.0) - (contentPane.getHeight() / 2.0));
@@ -206,4 +216,5 @@ public class SignInPanel extends JPanel implements MouseListener, ComponentListe
 
 	@Override
 	public void componentHidden(ComponentEvent event) { }
+	
 }

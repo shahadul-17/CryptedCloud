@@ -45,8 +45,8 @@ public class CloudServicePanel extends JPanel implements ActionListener, Compone
 		scrollPaneFileTable = new JScrollPane();
 		scrollPaneFileTable.getVerticalScrollBar().setUnitIncrement(25);
 		scrollPaneFileTable.getHorizontalScrollBar().setUnitIncrement(25);
-		scrollPaneFileTable.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-		scrollPaneFileTable.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+		scrollPaneFileTable.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		scrollPaneFileTable.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 		add(scrollPaneFileTable, BorderLayout.CENTER);
 		
 		fileExplorer = new CloudFileExplorer();
@@ -55,7 +55,7 @@ public class CloudServicePanel extends JPanel implements ActionListener, Compone
 		JPanel panelControls = new JPanel();
 		panelControls.setBackground(Color.WHITE);
 		((FlowLayout) panelControls.getLayout()).setAlignment(FlowLayout.LEFT);
-		panelControls.setPreferredSize(new Dimension(182, 0));
+		panelControls.setPreferredSize(new Dimension(168, 0));
 		add(panelControls, BorderLayout.WEST);
 		
 		buttonRefresh = createButton("refresh.png", "Refresh", "Refresh");
@@ -137,8 +137,6 @@ public class CloudServicePanel extends JPanel implements ActionListener, Compone
 			
 			@Override
 			public void run() {
-				fileExplorer.removeFiles();
-				
 				for (CloudFileInformation fileInformation : fileInformationList) {
 					fileExplorer.addFile(fileInformation);
 				}

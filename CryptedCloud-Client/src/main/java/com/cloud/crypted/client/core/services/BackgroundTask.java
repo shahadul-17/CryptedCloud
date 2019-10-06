@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.cloud.crypted.client.Application;
+import com.cloud.crypted.client.core.Configuration;
 import com.cloud.crypted.client.core.cryptography.AES;
 import com.cloud.crypted.client.core.cryptography.BCrypt;
 import com.cloud.crypted.client.core.cryptography.RSA;
@@ -59,16 +60,16 @@ public class BackgroundTask implements Task {
 		taskListeners.add(taskListener);
 	}
 	
-	private void callTaskListener(boolean succeeded, Object result) {
+	private void callTaskListener(boolean succeeded, Object ... results) {
 		if (taskListeners == null || taskListeners.isEmpty()) {
 			return;
 		}
 		
 		for (TaskListener taskListener : taskListeners) {
 			if (succeeded) {
-				taskListener.executionSucceeded(this, result);
+				taskListener.executionSucceeded(this, results);
 			} else {
-				taskListener.executionFailed(this, (Exception) result);
+				taskListener.executionFailed(this, (Exception) results[0]);
 			}
 		}
 	}
@@ -95,28 +96,8 @@ public class BackgroundTask implements Task {
 			throw new Exception("Incorrect passphrase provided.");
 		}
 		
-		callTaskListener(true, null);
+		callTaskListener(true, (Object) null);
 	}
-	
-	/*private char[] retrievePassphrase(String email, CryptedCloudService cryptedCloudService) throws Exception {
-		String[] ans = { "tom", "dhaka" };
-		Object returnValue = cryptedCloudService.getUserInformation(email);
-		
-		if (returnValue instanceof String) {
-			throw new Exception((String) returnValue);
-		}
-		
-		UserInformation userInformation = (UserInformation) returnValue;
-		String passphrase = userInformation.getEncryptedPassphrase();
-		
-		for (int i = ans.length - 1; i > -1; i--) {
-			passphrase = AES.decrypt(ans[i].toCharArray(), passphrase);
-		}
-		
-		System.out.println(passphrase);
-		
-		return passphrase.toCharArray();
-	}*/
 	
 	private void signInWithDifferentGoogleDriveAccount() throws Exception {
 		GoogleDriveService.removeCredential();
@@ -143,7 +124,7 @@ public class BackgroundTask implements Task {
 			throw new Exception((String) returnValue);
 		}
 		
-		callTaskListener(true, null);
+		callTaskListener(true, (Object) null);
 	}
 	
 	private void retrieveUserInformation() throws Exception {
@@ -177,7 +158,7 @@ public class BackgroundTask implements Task {
 			i++;
 		}
 		
-		callTaskListener(true, null);
+		callTaskListener(true, (Object) null);
 	}
 	
 	private void accountRecoverySecondPhase() throws Exception {
@@ -218,7 +199,7 @@ public class BackgroundTask implements Task {
 		userInformation.setEncryptedPassphrase(newEncryptedPassphrase);
 		userInformation.setEncryptedPrivateKey(AES.encrypt(newPassphrase, AES.decrypt(passphrase.toCharArray(), userInformation.getEncryptedPrivateKey())));
 		
-		Object returnValue = cryptedCloudService.updateAccount(userInformation);		// saving user information... IT DOES NOT WORK... NEEDS FIX....
+		Object returnValue = cryptedCloudService.updateAccount(userInformation);		// saving user information...
 		
 		if (returnValue instanceof String) {
 			throw new Exception((String) returnValue);
@@ -231,15 +212,21 @@ public class BackgroundTask implements Task {
 			throw new Exception((String) returnValue);
 		}
 		
+		int encryptedRandomKeySignatureLength = Integer.parseInt(Configuration.get("encryptedRandomKey.signature.length"));
+		
 		@SuppressWarnings("unchecked")
 		Set<FileAccessInformation> fileAccessInformationSet = (Set<FileAccessInformation>) returnValue;
 		
 		for (FileAccessInformation fileAccessInformation : fileAccessInformationSet) {
-			if ("owner".equalsIgnoreCase(fileAccessInformation.getUserRole())) {
+			String encryptedRandomKeySignature = fileAccessInformation.getEncryptedRandomKey().substring(0, encryptedRandomKeySignatureLength);
+			String encryptedRandomKeyWithoutSignature = fileAccessInformation.getEncryptedRandomKey().substring(encryptedRandomKeySignatureLength);
+			
+			if (Configuration.get("encryptedRandomKey.signature.aes").equals(encryptedRandomKeySignature)) {
 				fileAccessInformation.setEncryptedRandomKey(
+					encryptedRandomKeySignature +
 					AES.encrypt(newPassphrase,
 						AES.decrypt(passphrase.toCharArray(),
-							fileAccessInformation.getEncryptedRandomKey()
+							encryptedRandomKeyWithoutSignature
 						)
 					)
 				);
@@ -252,7 +239,7 @@ public class BackgroundTask implements Task {
 			}
 		}
 		
-		callTaskListener(true, null);
+		callTaskListener(true, (Object) null);
 	}
 	
 	private void refresh() throws Exception {
@@ -285,7 +272,8 @@ public class BackgroundTask implements Task {
 			throw new Exception((String) returnValue);
 		}
 		
-		String encryptedRandomKey = AES.encrypt(passphrase, new String(randomKey));
+		String encryptedRandomKey = Configuration.get("encryptedRandomKey.signature.aes")
+				+ AES.encrypt(passphrase, new String(randomKey));
 		FileInformation fileInformation = (FileInformation) returnValue;
 		FileAccessInformation fileAccessInformation = new FileAccessInformation(
 			googleDriveService.getGoogleDriveUser().getEmail(),
@@ -298,7 +286,7 @@ public class BackgroundTask implements Task {
 			throw new Exception((String) returnValue);
 		}
 		
-		callTaskListener(true, null);
+		callTaskListener(true, (Object) null);
 	}
 	
 	private void download() throws Exception {
@@ -327,13 +315,38 @@ public class BackgroundTask implements Task {
 			
 			FileAccessInformation fileAccessInformation = (FileAccessInformation) returnValue;
 			
+			int encryptedRandomKeySignatureLength = Integer.parseInt(Configuration.get("encryptedRandomKey.signature.length"));
+			
+			String encryptedRandomKeySignature = fileAccessInformation.getEncryptedRandomKey().substring(0, encryptedRandomKeySignatureLength);
+			String encryptedRandomKeyWithoutSignature = fileAccessInformation.getEncryptedRandomKey().substring(encryptedRandomKeySignatureLength);
+			
 			char[] randomKey = null;
 			
 			if ("owner".equalsIgnoreCase(fileAccessInformation.getUserRole())) {
-				randomKey = AES.decrypt(passphrase, fileAccessInformation.getEncryptedRandomKey()).toCharArray();
+				randomKey = AES.decrypt(passphrase, encryptedRandomKeyWithoutSignature).toCharArray();
 			} else if ("writer".equalsIgnoreCase(fileAccessInformation.getUserRole())) {
-				String privateKey = AES.decrypt(passphrase, userInformation.getEncryptedPrivateKey());
-				randomKey = new RSA(privateKey, "").decrypt(fileAccessInformation.getEncryptedRandomKey()).toCharArray();
+				if (Configuration.get("encryptedRandomKey.signature.rsa").equalsIgnoreCase(encryptedRandomKeySignature)) {
+					String privateKey = AES.decrypt(passphrase, userInformation.getEncryptedPrivateKey());
+					String temporaryRandomKey = new RSA(privateKey, "").decrypt(encryptedRandomKeyWithoutSignature);
+					
+					randomKey = temporaryRandomKey.toCharArray();
+					
+					// during first download, changing encryption from 'RSA' to 'AES'...
+					fileAccessInformation.setEncryptedRandomKey(
+						Configuration.get("encryptedRandomKey.signature.aes") +
+						AES.encrypt(passphrase, temporaryRandomKey)
+					);
+					
+					returnValue = cryptedCloudService.saveFileAccessInformation(fileAccessInformation);
+					
+					if (returnValue instanceof String) {
+						System.err.println("An internal error occurred: " + (String) returnValue);
+					}
+				} else if (Configuration.get("encryptedRandomKey.signature.aes").equalsIgnoreCase(encryptedRandomKeySignature)) {
+					randomKey = AES.decrypt(passphrase, encryptedRandomKeyWithoutSignature).toCharArray();
+				} else {
+					throw new Exception("Unable to identify the signature of the encrypted random key.");
+				}
 			} else {
 				throw new Exception("Unable to identify the user role: '" + fileAccessInformation.getUserRole() + "'");
 			}
@@ -344,7 +357,7 @@ public class BackgroundTask implements Task {
 			googleDriveService.download(null, downloadLocation, cloudFileInformation);
 		}
 		
-		callTaskListener(true, null);
+		callTaskListener(true, (Object) null);
 	}
 	
 	private void share() throws Exception {
@@ -380,10 +393,15 @@ public class BackgroundTask implements Task {
 				UserInformation userInformation = (UserInformation) returnValue;
 				
 				// decrypting random key using file owner's password...
-				String randomKey = AES.decrypt(Application.passphrase, fileAccessInformation.getEncryptedRandomKey());
+				String randomKey = AES.decrypt(Application.passphrase,
+					fileAccessInformation.getEncryptedRandomKey().substring(
+						Integer.parseInt(Configuration.get("encryptedRandomKey.signature.length"))
+					)
+				);
 				
 				// re-encrypting randomKey using the public key of the user with whom the file will be shared...
-				String encryptedRandomKey = new RSA("", userInformation.getPublicKey()).encrypt(randomKey);
+				String encryptedRandomKey = Configuration.get("encryptedRandomKey.signature.rsa") +
+						new RSA("", userInformation.getPublicKey()).encrypt(randomKey);
 				
 				// saving new file access...
 				cryptedCloudService.saveFileAccessInformation(new FileAccessInformation(
@@ -396,7 +414,7 @@ public class BackgroundTask implements Task {
 		}
 		
 		googleDriveService.share(email, cloudFileInformation);
-		callTaskListener(true, null);
+		callTaskListener(true, (Object) null);
 	}
 	
 	private void delete() throws Exception {
@@ -427,7 +445,7 @@ public class BackgroundTask implements Task {
 		}
 		
 		googleDriveService.delete(cloudFileInformation);
-		callTaskListener(true, null);
+		callTaskListener(true, (Object) null);
 	}
 	
 	@Override
@@ -463,8 +481,16 @@ public class BackgroundTask implements Task {
 		}
 	}
 	
-	private static boolean validatePassphrase(char[] passphrase, char[] rePassphrase) {
+	private static boolean validatePassphrase(char[] passphrase) {
 		if (passphrase.length < 8) {
+			return false;
+		}
+		
+		return true;
+	}
+	
+	private static boolean validatePassphrase(char[] passphrase, char[] rePassphrase) {
+		if (!validatePassphrase(passphrase)) {
 			return false;
 		}
 		
@@ -489,7 +515,7 @@ public class BackgroundTask implements Task {
 			userInformation.setEmail(email);
 			userInformation.setHashedPassphrase(BCrypt.hashpw(new String(passphrase), BCrypt.gensalt()));
 			
-			String encryptedPassphrase = new String(passphrase);
+			String encryptedPassphrase = "";
 			
 			for (int i = 0; i < securityQuestionAndAnswerArray.length; i += 2) {
 				securityQuestionAndAnswerArray[i] = securityQuestionAndAnswerArray[i].trim();
@@ -497,6 +523,10 @@ public class BackgroundTask implements Task {
 				
 				if (securityQuestionAndAnswerArray[i].isEmpty() || securityQuestionAndAnswerArray[i + 1].isEmpty()) {
 					continue;
+				}
+				
+				if (encryptedPassphrase.isEmpty()) {
+					encryptedPassphrase = new String(passphrase);
 				}
 				
 				try {

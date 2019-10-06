@@ -10,6 +10,7 @@ import java.awt.event.MouseListener;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.border.EmptyBorder;
 
 import com.cloud.crypted.client.core.models.CloudFileInformation;
 
@@ -47,6 +48,7 @@ public class CloudFile extends JPanel implements MouseListener {
 		add(labelIcon, BorderLayout.CENTER);
 		
 		labelFileName = new JLabel();
+		labelFileName.setBorder(new EmptyBorder(0, 5, 0, 5));
 		labelFileName.setHorizontalAlignment(SwingConstants.CENTER);
 		labelFileName.setText(fileInformation.getName());
 		labelFileName.setPreferredSize(new Dimension(0, 32));
@@ -66,6 +68,17 @@ public class CloudFile extends JPanel implements MouseListener {
 		rowData.append("</html>");
 		
 		setToolTipText(rowData.toString());
+	}
+	
+	public void updateCloudFileInformation(CloudFileInformation fileInformation) {
+		this.fileInformation.setName(fileInformation.getName());
+		this.fileInformation.setSize(fileInformation.getSize());
+		this.fileInformation.setModifiedTime(fileInformation.getModifiedTime());
+		this.fileInformation.setIcon(fileInformation.getIconURL());
+		
+		labelIcon.setIcon(fileInformation.getIcon());
+		labelFileName.setText(fileInformation.getName());
+		setToolTipText();
 	}
 	
 	public CloudFileInformation getCloudFileInformation() {

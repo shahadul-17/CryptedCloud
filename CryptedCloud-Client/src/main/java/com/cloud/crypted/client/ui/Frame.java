@@ -68,7 +68,7 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 	private void initialize() throws Exception {
 		setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/images/icon.png")));
 		setTitle(Configuration.get("title") + " v" + Configuration.get("version"));
-		setSize(888, 700);
+		setSize(1007, 700);
 		setMinimumSize(getSize());
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -498,10 +498,10 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 	 * 
 	 */
 	@Override
-	public void executionSucceeded(Task task, Object result) {
+	public void executionSucceeded(Task task, Object ... results) {
 		if ("authenticate".equalsIgnoreCase(task.getName()) ||
 				"signInWithDifferentGoogleDriveAccount".equalsIgnoreCase(task.getName())) {
-			googleDriveService = (GoogleDriveService) result;
+			googleDriveService = (GoogleDriveService) results[0];
 			googleDriveService.addGoogleDriveListener(this);
 			
 			setStatusText(true, "Successfully logged in to google drive service.");
@@ -524,7 +524,20 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 			setProgressBarStatusValue(100);
 			changeContentPaneComponent(signInPanel);
 		} else if ("retrieveUserInformation".equalsIgnoreCase(task.getName())) {
-			userInformation = (UserInformation) result;
+			userInformation = (UserInformation) results[0];
+			
+			// FAILED DUE TO NO RECOVERY INFORMATION...
+			if (userInformation.getSecurityQuestionInformationList() == null ||
+					userInformation.getSecurityQuestionInformationList().size() == 0) {
+				signInPanel.setErrorMessage("No account recovery information associated with your account.");
+				
+				setStatusText(false, "No account recovery information associated with your account.");
+				setProgressBarStatusValue(0);
+				changeContentPaneComponent(signInPanel);
+				
+				return;
+			}
+			
 			String[] securityQuestions = new String[3];
 			
 			int i = 0;
