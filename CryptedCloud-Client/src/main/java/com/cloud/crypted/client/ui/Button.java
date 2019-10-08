@@ -80,6 +80,10 @@ public class Button extends JPanel implements ActionListener {
 	
 	@Override
 	public void actionPerformed(ActionEvent event) {
+		if (actionListeners == null) {
+			return;
+		}
+		
 		event = new ActionEvent(this, event.getID(), event.getActionCommand());
 		
 		for (ActionListener actionListener : actionListeners) {

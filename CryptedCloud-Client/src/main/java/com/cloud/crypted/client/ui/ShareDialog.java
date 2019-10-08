@@ -29,29 +29,40 @@ public final class ShareDialog extends JDialog implements ActionListener {
 	private void initialize() {
 		setTitle("Share");
 		setModal(true);
-		setSize(450, 250);
+		setSize(435, 160);
+		setResizable(false);
+		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		
 		contentPane = new JPanel();
 		contentPane.setLayout(null);
 		setContentPane(contentPane);
 		
 		JLabel labelEmail = new JLabel("Email");
-		labelEmail.setBounds(12, 13, 150, 25);
+		labelEmail.setBounds(10, 13, 150, 25);
 		contentPane.add(labelEmail);
 		
 		textFieldEmail = new JTextField();
 		textFieldEmail.setBorder(BorderFactory.createEmptyBorder());
-		textFieldEmail.setBounds(12, 40, 408, 25);
+		textFieldEmail.setBounds(10, 40, 408, 25);
 		contentPane.add(textFieldEmail);
 		
 		buttonShare = new JButton("Share");
-		buttonShare.setBounds(320, 78, 100, 30);
+		buttonShare.setBounds(318, 78, 100, 30);
 		buttonShare.addActionListener(this);
 		contentPane.add(buttonShare);
 	}
 	
 	public String getEmail() {
 		return email;
+	}
+	
+	@Override
+	public void actionPerformed(ActionEvent event) {
+		if (event.getSource().equals(buttonShare)) {
+			email = textFieldEmail.getText().trim();
+			
+			dispose();
+		}
 	}
 	
 	public static ShareDialog show(Component parentComponent) {
@@ -65,15 +76,6 @@ public final class ShareDialog extends JDialog implements ActionListener {
 		shareDialog.setVisible(true);
 		
 		return shareDialog;
-	}
-
-	@Override
-	public void actionPerformed(ActionEvent event) {
-		if (event.getSource().equals(buttonShare)) {
-			email = textFieldEmail.getText().trim();
-			
-			dispose();
-		}
 	}
 	
 }

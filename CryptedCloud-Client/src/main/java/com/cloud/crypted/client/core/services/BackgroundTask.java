@@ -19,12 +19,14 @@ import com.cloud.crypted.client.core.models.Task;
 import com.cloud.crypted.client.core.models.UserInformation;
 import com.cloud.crypted.client.core.utilities.RandomKeyGenerator;
 import com.cloud.crypted.client.core.utilities.StringUtilities;
+import com.cloud.crypted.client.ui.SecurityManager;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp.Browser;
 
 public class BackgroundTask implements Task {
 	
 	private String name = null;
 	private Object[] parameters = null;
+	private Object returnValue = null;
 	
 	private List<TaskListener> taskListeners = null;
 	
@@ -69,7 +71,11 @@ public class BackgroundTask implements Task {
 			if (succeeded) {
 				taskListener.executionSucceeded(this, results);
 			} else {
-				taskListener.executionFailed(this, (Exception) results[0]);
+				if (results.length > 1 && results[1] != null) {
+					taskListener.executionFailed(this, (Exception) results[0], results[1]);
+				} else {
+					taskListener.executionFailed(this, (Exception) results[0]);
+				}
 			}
 		}
 	}
@@ -448,6 +454,87 @@ public class BackgroundTask implements Task {
 		callTaskListener(true, (Object) null);
 	}
 	
+	private String[] retrieveEmailAddressesFromFileInformation(String email,
+			CloudFileInformation fileInformation,
+			CryptedCloudService cryptedCloudService) throws Exception {
+		Object returnValue = cryptedCloudService.getFileAccessInformationSetByCloudFileID(fileInformation.getID());
+		
+		if (returnValue instanceof String) {
+			throw new Exception((String) returnValue);
+		}
+		
+		@SuppressWarnings("unchecked")
+		Set<FileAccessInformation> fileAccessInformationSet = (Set<FileAccessInformation>) returnValue;
+		String[] emailAddresses = new String[fileAccessInformationSet.size()];
+		
+		boolean isOwner = false;
+		int i = 0;
+		
+		for (FileAccessInformation fileAccessInformation : fileAccessInformationSet) {
+			if (email.equalsIgnoreCase(fileAccessInformation.getEmail())) {
+				if (email.equalsIgnoreCase(fileAccessInformation.getEmail()) &&
+						"owner".equalsIgnoreCase(fileAccessInformation.getUserRole())) {
+					isOwner = true;
+				}
+			} else {
+				emailAddresses[i] = fileAccessInformation.getEmail();
+				
+				i++;
+			}
+		}
+		
+		if (!isOwner) {
+			throw new Exception("Sorry, you do not have access to view the security information of the selected file.");
+		}
+		
+		return emailAddresses;
+	}
+	
+	private void requestForOpeningSecurityManager() throws Exception {
+		String email = (String) parameters[0];
+		CloudFileInformation fileInformation = (CloudFileInformation) parameters[1];
+		CryptedCloudService cryptedCloudService = (CryptedCloudService) parameters[2];
+		
+		String[] emailAddresses = retrieveEmailAddressesFromFileInformation(email, fileInformation, cryptedCloudService);
+		
+		callTaskListener(true, emailAddresses, fileInformation);
+	}
+	
+	private void refreshSecurityInformation() throws Exception {
+		String email = (String) parameters[0];
+		SecurityManager securityManager = (SecurityManager) parameters[1];
+		CryptedCloudService cryptedCloudService = (CryptedCloudService) parameters[2];
+		
+		returnValue = securityManager;		// if error occurs, this value will be passed...
+		
+		String[] emailAddresses = retrieveEmailAddressesFromFileInformation(email,
+				securityManager.getCloudFileInformation(), cryptedCloudService);
+		
+		callTaskListener(true, emailAddresses, securityManager);
+	}
+	
+	private void revokeAccess() throws Exception {
+		String email = (String) parameters[0];				// current user's email address...
+		String emailToRevokeAccess = (String) parameters[1];		// email of the user whose file access needs to be revoked...
+		SecurityManager securityManager = (SecurityManager) parameters[2];
+		CryptedCloudService cryptedCloudService = (CryptedCloudService) parameters[3];
+		// GoogleDriveService googleDriveService = (GoogleDriveService) parameters[4];		// this will be needed later...
+		
+		returnValue = securityManager;		// if error occurs, this value will be passed...
+		
+		Object returnValue = cryptedCloudService.deleteFileAccessInformation(emailToRevokeAccess,
+				securityManager.getCloudFileInformation().getID());
+		
+		if (returnValue instanceof String) {
+			throw new Exception((String) returnValue);
+		}
+		
+		String[] emailAddresses = retrieveEmailAddressesFromFileInformation(email,
+				securityManager.getCloudFileInformation(), cryptedCloudService);
+		
+		callTaskListener(true, emailAddresses, securityManager);
+	}
+	
 	@Override
 	public void execute() {
 		try {
@@ -475,9 +562,17 @@ public class BackgroundTask implements Task {
 				share();
 			} else if ("delete".equalsIgnoreCase(name)) {
 				delete();
+			} else if ("requestForOpeningSecurityManager".equalsIgnoreCase(name)) {
+				requestForOpeningSecurityManager();
+			} else if ("refreshSecurityInformation".equalsIgnoreCase(name)) {
+				refreshSecurityInformation();
+			} else if ("revokeAccess".equalsIgnoreCase(name)) {
+				revokeAccess();
 			}
 		} catch (Exception exception) {
-			callTaskListener(false, exception);
+			callTaskListener(false, exception, returnValue);
+			
+			returnValue = null;
 		}
 	}
 	

@@ -433,6 +433,32 @@ public class CryptedCloudService {
 		return "An error occurred while connecting to " + Configuration.get("title") + " server.";
 	}
 	
+	public Object deleteFileAccessInformation(String email, String cloudFileID) {
+		StringBuilder responseBuilder = new StringBuilder(Integer.parseInt(Configuration.get("collection.initialCapacity")));
+		
+		if (sendHTTPRequest("DELETE", Configuration.get("service.host") + "v" + Configuration.get("version") + '/' + "fileAccessSet?email=" + email + "&cloudFileID=" + cloudFileID, (String) null, responseBuilder) == 200) {
+			Map<?, ?> response = null;
+			
+			try {
+				response = Application.OBJECT_MAPPER.readValue(responseBuilder.toString(), Map.class);
+			} catch (Exception exception) {
+				exception.printStackTrace();
+				
+				return exception.getMessage();
+			}
+			
+			Object errorMessage = response.get("error");
+			
+			if (errorMessage == null) {
+				return null;
+			} else {
+				return errorMessage;
+			}
+		}
+		
+		return "An error occurred while connecting to " + Configuration.get("title") + " server.";
+	}
+	
 	public Object getFileAccessInformationSetByEmail(String email) {
 		StringBuilder responseBuilder = new StringBuilder(Integer.parseInt(Configuration.get("collection.initialCapacity")));
 		
@@ -476,7 +502,7 @@ public class CryptedCloudService {
 	public Object getFileAccessInformationSetByCloudFileID(String cloudFileID) {
 		StringBuilder responseBuilder = new StringBuilder(Integer.parseInt(Configuration.get("collection.initialCapacity")));
 		
-		if (sendHTTPRequest("GET", Configuration.get("service.host") + "fileAccessSet?cloudFileID=" + cloudFileID, (String) null, responseBuilder) == 200) {
+		if (sendHTTPRequest("GET", Configuration.get("service.host") + "v" + Configuration.get("version") + '/' + "fileAccessSet?cloudFileID=" + cloudFileID, (String) null, responseBuilder) == 200) {
 			Map<?, ?> response = null;
 			
 			try {

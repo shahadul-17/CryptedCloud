@@ -4,12 +4,17 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.LinkedList;
+import java.util.List;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 
 import com.cloud.crypted.client.core.models.CloudFileInformation;
@@ -24,6 +29,8 @@ public class CloudFile extends JPanel implements MouseListener {
 	private CloudFileInformation fileInformation;
 	
 	private static final Color DODGER_BLUE = new Color(30, 144, 255);
+	
+	private List<ActionListener> actionListeners;
 	
 	public CloudFile(CloudFileInformation fileInformation) throws Exception {
 		this.fileInformation = fileInformation;
@@ -53,6 +60,26 @@ public class CloudFile extends JPanel implements MouseListener {
 		labelFileName.setText(fileInformation.getName());
 		labelFileName.setPreferredSize(new Dimension(0, 32));
 		add(labelFileName, BorderLayout.SOUTH);
+	}
+	
+	public void addActionListener(ActionListener actionListener) {
+		if (actionListener == null) {
+			return;
+		}
+		
+		if (actionListeners == null) {
+			actionListeners = new LinkedList<ActionListener>();
+		}
+		
+		actionListeners.add(actionListener);
+	}
+	
+	public void removeActionListener(ActionListener actionListener) {
+		if (actionListener == null || actionListeners == null) {
+			return;
+		}
+		
+		actionListeners.remove(actionListener);
 	}
 	
 	private void setToolTipText() {
@@ -98,29 +125,24 @@ public class CloudFile extends JPanel implements MouseListener {
 	
 	@Override
 	public void mouseClicked(MouseEvent event) {
-		CloudFileExplorer fileExplorer = (CloudFileExplorer) getParent();
+		if (actionListeners == null) {
+			return;
+		}
 		
-		if (DODGER_BLUE.equals(getBackground())) {
-			setBackground(Color.LIGHT_GRAY);
-			setForeground(Color.BLACK);
-			
-			if (fileExplorer != null) {
-				fileExplorer.setSelectedFile(null);
-			}
+		String actionCommand = null;
+		
+		if (SwingUtilities.isLeftMouseButton(event)) {
+			actionCommand = "leftClick";
+		} else if (SwingUtilities.isRightMouseButton(event)) {
+			actionCommand = "rightClick";
 		} else {
-			setBackground(DODGER_BLUE);
-			setForeground(Color.WHITE);
-			
-			if (fileExplorer != null) {
-				CloudFile previouslySelectedFile = fileExplorer.getSelectedFile();
-				
-				if (previouslySelectedFile != null) {
-					previouslySelectedFile.setBackground(Color.WHITE);
-					previouslySelectedFile.setForeground(Color.BLACK);
-				}
-				
-				fileExplorer.setSelectedFile(this);
-			}
+			actionCommand = "click";
+		}
+		
+		ActionEvent actionEvent = new ActionEvent(this, event.getID(), actionCommand);
+		
+		for (ActionListener actionListener : actionListeners) {
+			actionListener.actionPerformed(actionEvent);
 		}
 	}
 	

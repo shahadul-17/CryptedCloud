@@ -7,6 +7,6 @@ import com.cloud.crypted.client.core.models.Task;
 public interface TaskListener extends EventListener {
 	
 	void executionSucceeded(Task task, Object ... results);
-	void executionFailed(Task task, Exception exception);
+	void executionFailed(Task task, Exception exception, Object ... results);
 	
 }
