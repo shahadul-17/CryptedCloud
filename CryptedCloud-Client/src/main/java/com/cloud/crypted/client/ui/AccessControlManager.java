@@ -28,15 +28,18 @@ import javax.swing.border.EmptyBorder;
 
 import com.cloud.crypted.client.core.models.CloudFileInformation;
 import com.cloud.crypted.client.core.utilities.StringUtilities;
+import java.awt.GridLayout;
 
-public class SecurityManager extends JFrame implements ActionListener, WindowListener {
+public class AccessControlManager extends JFrame implements ActionListener, WindowListener {
 	
 	private static final long serialVersionUID = -5956231286705954846L;
 	
 	private JPanel contentPane;
 	private JTextField textFieldFileName;
+	private JTextField textFieldEmail;
 	private JList<String> emailList;
 	private JButton buttonRefresh;
+	private JButton buttonShare;
 	private JButton buttonDelete;
 	
 	private CloudFileInformation cloudFileInformation;
@@ -44,15 +47,16 @@ public class SecurityManager extends JFrame implements ActionListener, WindowLis
 	private List<ActionListener> actionListeners;
 	private DefaultListModel<String> emailListModel;
 	
-	private static Map<String, SecurityManager> securityManagerMap = new HashMap<String, SecurityManager>();
+	private static Map<String, AccessControlManager> securityManagerMap =
+			new HashMap<String, AccessControlManager>();
 	
-	public SecurityManager() throws Exception {
+	public AccessControlManager() throws Exception {
 		initialize();
 	}
 	
 	private void initialize() throws Exception {
-		setTitle("Security Manager");
-		setSize(450, 250);
+		setTitle("Access Control Manager");
+		setSize(385, 245);
 		setResizable(false);
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		addWindowListener(this);
@@ -62,23 +66,45 @@ public class SecurityManager extends JFrame implements ActionListener, WindowLis
 		contentPane.setLayout(new BorderLayout());
 		setContentPane(contentPane);
 		
-		JPanel panel = new JPanel();
-		panel.setBorder(new EmptyBorder(5, 5, 5, 5));
-		panel.setLayout(new BorderLayout(5, 0));
-		contentPane.add(panel, BorderLayout.NORTH);
+		JPanel panelTop = new JPanel();
+		panelTop.setLayout(new GridLayout(2, 0, 0, 0));
+		contentPane.add(panelTop, BorderLayout.NORTH);
+		
+		JPanel panelFileName = new JPanel();
+		panelFileName.setBorder(new EmptyBorder(5, 5, 3, 5));
+		panelFileName.setLayout(new BorderLayout());
+		panelTop.add(panelFileName);
 		
 		JLabel labelFileName = new JLabel("File name");
+		labelFileName.setPreferredSize(new Dimension(80, 0));
 		labelFileName.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		labelFileName.setHorizontalAlignment(SwingConstants.LEFT);
-		panel.add(labelFileName, BorderLayout.WEST);
+		panelFileName.add(labelFileName, BorderLayout.WEST);
 		
 		textFieldFileName = new JTextField();
 		textFieldFileName.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		textFieldFileName.setEditable(false);
 		textFieldFileName.setBackground(Color.WHITE);
-		panel.add(textFieldFileName, BorderLayout.CENTER);
+		panelFileName.add(textFieldFileName, BorderLayout.CENTER);
+		
+		JPanel panelEmail = new JPanel();
+		panelEmail.setBorder(new EmptyBorder(3, 5, 5, 5));
+		panelEmail.setLayout(new BorderLayout());
+		panelTop.add(panelEmail);
+		
+		JLabel labelEmail = new JLabel("Email");
+		labelEmail.setPreferredSize(new Dimension(80, 0));
+		labelEmail.setFont(new Font("Tahoma", Font.PLAIN, 14));
+		labelEmail.setHorizontalAlignment(SwingConstants.LEFT);
+		panelEmail.add(labelEmail, BorderLayout.WEST);
+		
+		textFieldEmail = new JTextField();
+		textFieldEmail.setFont(new Font("Tahoma", Font.PLAIN, 14));
+		panelEmail.add(textFieldEmail, BorderLayout.CENTER);
 		
 		JScrollPane scrollPaneEmailList = new JScrollPane();
+		scrollPaneEmailList.getVerticalScrollBar().setUnitIncrement(25);
+		scrollPaneEmailList.getHorizontalScrollBar().setUnitIncrement(25);
 		contentPane.add(scrollPaneEmailList, BorderLayout.CENTER);
 		
 		emailListModel = new DefaultListModel<String>();
@@ -94,13 +120,19 @@ public class SecurityManager extends JFrame implements ActionListener, WindowLis
 		
 		buttonRefresh = new JButton();
 		buttonRefresh.setIcon(new ImageIcon(getClass().getResource("/images/refresh.png")));
-		buttonRefresh.setToolTipText("Refresh");
+		buttonRefresh.setToolTipText("Refresh access control list");
 		buttonRefresh.addActionListener(this);
 		panelControls.add(buttonRefresh);
 		
+		buttonShare = new JButton();
+		buttonShare.setIcon(new ImageIcon(getClass().getResource("/images/share.png")));
+		buttonShare.setToolTipText("Share");
+		buttonShare.addActionListener(this);
+		panelControls.add(buttonShare, BorderLayout.EAST);
+		
 		buttonDelete = new JButton();
 		buttonDelete.setIcon(new ImageIcon(getClass().getResource("/images/delete.png")));
-		buttonDelete.setToolTipText("Delete");
+		buttonDelete.setToolTipText("Delete email from access control list");
 		buttonDelete.addActionListener(this);
 		panelControls.add(buttonDelete);
 	}
@@ -119,6 +151,7 @@ public class SecurityManager extends JFrame implements ActionListener, WindowLis
 			@Override
 			public void run() {
 				buttonRefresh.setEnabled(enabled);
+				buttonShare.setEnabled(enabled);
 				buttonDelete.setEnabled(enabled);
 			}
 		});
@@ -176,6 +209,14 @@ public class SecurityManager extends JFrame implements ActionListener, WindowLis
 		
 		if (button.equals(buttonRefresh)) {
 			actionCommand = "refresh";
+		} else if (button.equals(buttonShare)) {
+			String email = textFieldEmail.getText().trim();
+			
+			if (StringUtilities.isNullOrEmpty(email)) {
+				return;
+			}
+			
+			actionCommand = "share#" + email;
 		} else if (button.equals(buttonDelete)) {
 			if (emailList.getSelectedValue() == null) {
 				return;
@@ -195,32 +236,32 @@ public class SecurityManager extends JFrame implements ActionListener, WindowLis
 		return securityManagerMap.containsKey(cloudFileID);
 	}
 	
-	public static SecurityManager show(String[] emailAddresses,
+	public static AccessControlManager show(String[] emailAddresses,
 			CloudFileInformation fileInformation, Object parentComponent) {
-		SecurityManager securityManager = null;
+		AccessControlManager accessControlManager = null;
 		
 		try {
-			securityManager = new SecurityManager();
+			accessControlManager = new AccessControlManager();
 		} catch (Exception exception) {
 			exception.printStackTrace();
 			
-			return securityManager;
+			return accessControlManager;
 		}
 		
 		if (parentComponent instanceof JFrame) {
-			securityManager.setIconImage(((JFrame) parentComponent).getIconImage());
+			accessControlManager.setIconImage(((JFrame) parentComponent).getIconImage());
 		}
 		
-		securityManager.setFileName(fileInformation.getName());
-		securityManager.setEmailListContent(emailAddresses);
-		securityManager.setCloudFileInformation(fileInformation);
-		securityManager.setLocationRelativeTo((JFrame) parentComponent);
-		securityManager.addActionListener((ActionListener) parentComponent);
-		securityManager.setVisible(true);
+		accessControlManager.setFileName(fileInformation.getName());
+		accessControlManager.setEmailListContent(emailAddresses);
+		accessControlManager.setCloudFileInformation(fileInformation);
+		accessControlManager.setLocationRelativeTo((JFrame) parentComponent);
+		accessControlManager.addActionListener((ActionListener) parentComponent);
+		accessControlManager.setVisible(true);
 		
-		securityManagerMap.put(fileInformation.getID(), securityManager);
+		securityManagerMap.put(fileInformation.getID(), accessControlManager);
 		
-		return securityManager;
+		return accessControlManager;
 	}
 
 	@Override

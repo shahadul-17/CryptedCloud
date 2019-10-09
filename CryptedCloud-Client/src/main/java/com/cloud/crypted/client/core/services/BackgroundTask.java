@@ -19,7 +19,7 @@ import com.cloud.crypted.client.core.models.Task;
 import com.cloud.crypted.client.core.models.UserInformation;
 import com.cloud.crypted.client.core.utilities.RandomKeyGenerator;
 import com.cloud.crypted.client.core.utilities.StringUtilities;
-import com.cloud.crypted.client.ui.SecurityManager;
+import com.cloud.crypted.client.ui.AccessControlManager;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp.Browser;
 
 public class BackgroundTask implements Task {
@@ -367,14 +367,25 @@ public class BackgroundTask implements Task {
 	}
 	
 	private void share() throws Exception {
-		String email = (String) parameters[0];		// email of the user want to share with...
-		CloudFileInformation cloudFileInformation = (CloudFileInformation) parameters[1];
-		CryptedCloudService cryptedCloudService = (CryptedCloudService) parameters[2];
-		GoogleDriveService googleDriveService = (GoogleDriveService) parameters[3];
+		String email = (String) parameters[0];		// current user's email address...		
+		String emailToShare = (String) parameters[1];		// email of the user want to share with...
+		AccessControlManager accessControlManager = (AccessControlManager) parameters[2];
+		CryptedCloudService cryptedCloudService = (CryptedCloudService) parameters[3];
+		GoogleDriveService googleDriveService = (GoogleDriveService) parameters[4];
+		
+		CloudFileInformation cloudFileInformation = accessControlManager.getCloudFileInformation();
+		
+		returnValue = accessControlManager;		// if error occurs, this value will be passed...
+		
+		if (email.equalsIgnoreCase(emailToShare)) {
+			throw new Exception("Sorry, you cannot share file(s) with yourself.");
+		}
 		
 		boolean fileInformationExists = cryptedCloudService.fileInformationExists(cloudFileInformation.getID());
 		
-		if (fileInformationExists) {	// if the file exists in SFADE database, then it is encrypted...
+		String[] emailAddresses = null;
+		
+		if (fileInformationExists) {	// if the file exists in CryptedCloud database, then it is encrypted...
 			// getting file access information of currently logged in user...
 			Object returnValue = cryptedCloudService.getFileAccessInformation(googleDriveService.getGoogleDriveUser().getEmail(), cloudFileInformation.getID());
 			
@@ -387,7 +398,7 @@ public class BackgroundTask implements Task {
 			// if user is the owner of this file, then he/she is allowed to share...
 			if ("owner".equalsIgnoreCase(fileAccessInformation.getUserRole())) {
 				// getting information of user with whom the file will be shared...
-				returnValue = cryptedCloudService.getUserInformation(email, true,
+				returnValue = cryptedCloudService.getUserInformation(emailToShare, true,
 					googleDriveService.getGoogleDriveUser().getFirstName(),
 					googleDriveService.getGoogleDriveUser().getEmail()
 				);
@@ -414,13 +425,16 @@ public class BackgroundTask implements Task {
 					userInformation.getEmail(), fileAccessInformation.getCloudFileID(),
 					"writer", encryptedRandomKey
 				));
+				
+				emailAddresses = retrieveEmailAddressesFromFileInformation(email,
+						accessControlManager.getCloudFileInformation(), cryptedCloudService);
 			} else {
 				throw new Exception("You do not have permission to share \"" + cloudFileInformation.getName() + "\"");
 			}
 		}
 		
-		googleDriveService.share(email, cloudFileInformation);
-		callTaskListener(true, (Object) null);
+		googleDriveService.share(emailToShare, cloudFileInformation);
+		callTaskListener(true, cloudFileInformation.getName(), emailToShare, emailAddresses, accessControlManager);
 	}
 	
 	private void delete() throws Exception {
@@ -446,7 +460,14 @@ public class BackgroundTask implements Task {
 					throw new Exception((String) returnValue);
 				}
 			} else {
-				throw new Exception("You do not have permission to delete \"" + cloudFileInformation.getName() + "\"");
+				returnValue = cryptedCloudService.deleteFileAccessInformation(
+					googleDriveService.getGoogleDriveUser().getEmail(),
+					fileAccessInformation.getCloudFileID()
+				);
+				
+				if (returnValue instanceof String) {
+					throw new Exception((String) returnValue);
+				}
 			}
 		}
 		
@@ -490,7 +511,7 @@ public class BackgroundTask implements Task {
 		return emailAddresses;
 	}
 	
-	private void requestForOpeningSecurityManager() throws Exception {
+	private void requestForOpeningAccessControlManager() throws Exception {
 		String email = (String) parameters[0];
 		CloudFileInformation fileInformation = (CloudFileInformation) parameters[1];
 		CryptedCloudService cryptedCloudService = (CryptedCloudService) parameters[2];
@@ -500,39 +521,39 @@ public class BackgroundTask implements Task {
 		callTaskListener(true, emailAddresses, fileInformation);
 	}
 	
-	private void refreshSecurityInformation() throws Exception {
+	private void refreshAccessControlInformation() throws Exception {
 		String email = (String) parameters[0];
-		SecurityManager securityManager = (SecurityManager) parameters[1];
+		AccessControlManager accessControlManager = (AccessControlManager) parameters[1];
 		CryptedCloudService cryptedCloudService = (CryptedCloudService) parameters[2];
 		
-		returnValue = securityManager;		// if error occurs, this value will be passed...
+		returnValue = accessControlManager;		// if error occurs, this value will be passed...
 		
 		String[] emailAddresses = retrieveEmailAddressesFromFileInformation(email,
-				securityManager.getCloudFileInformation(), cryptedCloudService);
+				accessControlManager.getCloudFileInformation(), cryptedCloudService);
 		
-		callTaskListener(true, emailAddresses, securityManager);
+		callTaskListener(true, emailAddresses, accessControlManager);
 	}
 	
 	private void revokeAccess() throws Exception {
 		String email = (String) parameters[0];				// current user's email address...
 		String emailToRevokeAccess = (String) parameters[1];		// email of the user whose file access needs to be revoked...
-		SecurityManager securityManager = (SecurityManager) parameters[2];
+		AccessControlManager accessControlManager = (AccessControlManager) parameters[2];
 		CryptedCloudService cryptedCloudService = (CryptedCloudService) parameters[3];
 		// GoogleDriveService googleDriveService = (GoogleDriveService) parameters[4];		// this will be needed later...
 		
-		returnValue = securityManager;		// if error occurs, this value will be passed...
+		returnValue = accessControlManager;		// if error occurs, this value will be passed...
 		
 		Object returnValue = cryptedCloudService.deleteFileAccessInformation(emailToRevokeAccess,
-				securityManager.getCloudFileInformation().getID());
+				accessControlManager.getCloudFileInformation().getID());
 		
 		if (returnValue instanceof String) {
 			throw new Exception((String) returnValue);
 		}
 		
 		String[] emailAddresses = retrieveEmailAddressesFromFileInformation(email,
-				securityManager.getCloudFileInformation(), cryptedCloudService);
+				accessControlManager.getCloudFileInformation(), cryptedCloudService);
 		
-		callTaskListener(true, emailAddresses, securityManager);
+		callTaskListener(true, emailAddresses, accessControlManager);
 	}
 	
 	@Override
@@ -562,10 +583,10 @@ public class BackgroundTask implements Task {
 				share();
 			} else if ("delete".equalsIgnoreCase(name)) {
 				delete();
-			} else if ("requestForOpeningSecurityManager".equalsIgnoreCase(name)) {
-				requestForOpeningSecurityManager();
-			} else if ("refreshSecurityInformation".equalsIgnoreCase(name)) {
-				refreshSecurityInformation();
+			} else if ("requestForOpeningAccessControlManager".equalsIgnoreCase(name)) {
+				requestForOpeningAccessControlManager();
+			} else if ("refreshAccessControlInformation".equalsIgnoreCase(name)) {
+				refreshAccessControlInformation();
 			} else if ("revokeAccess".equalsIgnoreCase(name)) {
 				revokeAccess();
 			}

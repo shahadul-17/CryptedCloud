@@ -118,6 +118,10 @@ public class CloudFileExplorer extends JPanel implements ActionListener {
 
 	@Override
 	public void actionPerformed(ActionEvent event) {
+		if ("rightClick".equalsIgnoreCase(event.getActionCommand())) {
+			return;
+		}
+		
 		CloudFile cloudFile = (CloudFile) event.getSource();
 		
 		if (DODGER_BLUE.equals(cloudFile.getBackground())) {
@@ -136,13 +140,13 @@ public class CloudFileExplorer extends JPanel implements ActionListener {
 			
 			selectedFile = cloudFile;
 			
-			if (actionListeners != null && "rightClick".equalsIgnoreCase(event.getActionCommand())) {
+			/*if (actionListeners != null && "rightClick".equalsIgnoreCase(event.getActionCommand())) {
 				event = new ActionEvent(cloudFile, event.getID(), "openSecurityManager");
 				
 				for (ActionListener actionListener : actionListeners) {
 					actionListener.actionPerformed(event);
 				}
-			}
+			}*/
 		}
 	}
 	

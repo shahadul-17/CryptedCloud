@@ -50,7 +50,7 @@ public class CloudServicePanel extends JPanel implements ActionListener, Compone
 		add(scrollPaneFileTable, BorderLayout.CENTER);
 		
 		fileExplorer = new CloudFileExplorer();
-		fileExplorer.addActionListener(this);
+		// fileExplorer.addActionListener(this);
 		scrollPaneFileTable.setViewportView(fileExplorer);
 		
 		JPanel panelControls = new JPanel();

@@ -321,26 +321,16 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 		}
 	}
 	
-	private void share() {
-		CloudFileInformation cloudFileInformation = cloudServicePanel.getSelectedCloudFileInformation();
-		
-		if (cloudFileInformation == null) {
-			return;
-		}
-		
-		ShareDialog shareDialog = ShareDialog.show(this);
-		String email = shareDialog.getEmail();
-		
-		if (email.isEmpty()) {
-			return;
-		}
-		
+	private void share(String emailToShare, AccessControlManager accessControlManager) {
 		cloudServicePanel.buttonsSetEnabled(false);
+		accessControlManager.buttonsSetEnabled(false);
 		setStatusText(true, "Preparing to share...");
 		setProgressBarStatusValue(-1);
 		
 		Task sharingTask = new BackgroundTask("share");
-		sharingTask.setParameters(email, cloudFileInformation, Application.CRYPTED_CLOUD_SERVICE, googleDriveService);
+		sharingTask.setParameters(googleDriveService.getGoogleDriveUser().getEmail(),
+				emailToShare, accessControlManager,
+				Application.CRYPTED_CLOUD_SERVICE, googleDriveService);
 		sharingTask.addTaskListener(this);
 		
 		Application.taskExecutor.addTask(sharingTask);
@@ -354,7 +344,7 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 		}
 		
 		if (JOptionPane.showConfirmDialog(this,
-				"\"" + cloudFileInformation.getName() + "\" will be deleted permanently. Do you really want to continue?",
+				"Are you sure you want to delete \"" + cloudFileInformation.getName() + "\"?",
 				"Delete - " + cloudFileInformation.getName(), JOptionPane.WARNING_MESSAGE) == JOptionPane.OK_OPTION) {
 			cloudServicePanel.buttonsSetEnabled(false);
 			setStatusText(true, "Preparing to delete \"" + cloudFileInformation.getName() + "\" from cloud.");
@@ -368,29 +358,31 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 		}
 	}
 	
-	private void requestForOpeningSecurityManager() {
-		if (SecurityManager.isAlreadyShown(cloudServicePanel.getSelectedCloudFileInformation().getID())) {
+	private void requestForOpeningAccessControlManager() {
+		CloudFileInformation cloudFileInformation = cloudServicePanel.getSelectedCloudFileInformation();
+		
+		if (cloudFileInformation == null || AccessControlManager.isAlreadyShown(cloudFileInformation.getID())) {
 			return;
 		}
 		
 		cloudServicePanel.buttonsSetEnabled(false);
-		setStatusText(true, "Preparing to open security manager...");
+		setStatusText(true, "Preparing to open access control manager...");
 		setProgressBarStatusValue(-1);
 		
-		Task openSecurityManagerTask = new BackgroundTask("requestForOpeningSecurityManager");
-		openSecurityManagerTask.setParameters(
+		Task openAccessControlManagerTask = new BackgroundTask("requestForOpeningAccessControlManager");
+		openAccessControlManagerTask.setParameters(
 			googleDriveService.getGoogleDriveUser().getEmail(),
 			cloudServicePanel.getSelectedCloudFileInformation(),
 			Application.CRYPTED_CLOUD_SERVICE
 		);
-		openSecurityManagerTask.addTaskListener(this);
+		openAccessControlManagerTask.addTaskListener(this);
 		
-		Application.taskExecutor.addTask(openSecurityManagerTask);
+		Application.taskExecutor.addTask(openAccessControlManagerTask);
 	}
 	
-	private void requestForRevokingFileAccess(String email, SecurityManager securityManager) {
+	private void requestForRevokingFileAccess(String email, AccessControlManager accessControlManager) {
 		cloudServicePanel.buttonsSetEnabled(false);
-		securityManager.buttonsSetEnabled(false);
+		accessControlManager.buttonsSetEnabled(false);
 		
 		setStatusText(true, "Preparing to revoke access...");
 		setProgressBarStatusValue(-1);
@@ -399,7 +391,7 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 		revokeAccessTask.setParameters(
 			googleDriveService.getGoogleDriveUser().getEmail(),
 			email,
-			securityManager,
+			accessControlManager,
 			Application.CRYPTED_CLOUD_SERVICE,
 			googleDriveService
 		);
@@ -408,45 +400,45 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 		Application.taskExecutor.addTask(revokeAccessTask);
 	}
 	
-	private void openSecurityManager(String[] emailAddresses, CloudFileInformation fileInformation) {
-		setStatusText(true, "Security information retrieved successfully...");
+	private void openAccessControlManager(String[] emailAddresses, CloudFileInformation fileInformation) {
+		setStatusText(true, "Access control information retrieved successfully...");
 		setProgressBarStatusValue(100);
 		cloudServicePanel.buttonsSetEnabled(true);
 		
-		SecurityManager.show(emailAddresses, fileInformation, this);
+		AccessControlManager.show(emailAddresses, fileInformation, this);
 	}
 	
-	private void refreshSecurityInformation(SecurityManager securityManager) {
+	private void refreshAccessControlInformation(AccessControlManager accessControlManager) {
 		cloudServicePanel.buttonsSetEnabled(false);
-		securityManager.buttonsSetEnabled(false);
-		setStatusText(true, "Please wait while security information is being refreshed...");
+		accessControlManager.buttonsSetEnabled(false);
+		setStatusText(true, "Please wait while access control information is being refreshed...");
 		setProgressBarStatusValue(-1);
 		
-		Task refreshSecurityInformationTask = new BackgroundTask("refreshSecurityInformation");
-		refreshSecurityInformationTask.setParameters(
+		Task refreshAccessControlInformationTask = new BackgroundTask("refreshAccessControlInformation");
+		refreshAccessControlInformationTask.setParameters(
 			googleDriveService.getGoogleDriveUser().getEmail(),
-			securityManager,
+			accessControlManager,
 			Application.CRYPTED_CLOUD_SERVICE
 		);
-		refreshSecurityInformationTask.addTaskListener(this);
+		refreshAccessControlInformationTask.addTaskListener(this);
 		
-		Application.taskExecutor.addTask(refreshSecurityInformationTask);
+		Application.taskExecutor.addTask(refreshAccessControlInformationTask);
 	}
 	
-	private void refreshSecurityInformation(String[] emailAddresses,
-			SecurityManager securityManager) {
-		securityManager.setEmailListContent(emailAddresses);
-		securityManager.buttonsSetEnabled(true);
+	private void refreshAccessControlInformation(String[] emailAddresses,
+			AccessControlManager accessControlManager) {
+		accessControlManager.setEmailListContent(emailAddresses);
+		accessControlManager.buttonsSetEnabled(true);
 		cloudServicePanel.buttonsSetEnabled(true);
 		
-		setStatusText(true, "Security information refreshed successfully.");
+		setStatusText(true, "Access control information refreshed successfully.");
 		setProgressBarStatusValue(100);
 	}
 	
 	private void fileAccessRevocationSucceeded(String[] emailAddresses,
-			SecurityManager securityManager) {
-		securityManager.setEmailListContent(emailAddresses);
-		securityManager.buttonsSetEnabled(true);
+			AccessControlManager accessControlManager) {
+		accessControlManager.setEmailListContent(emailAddresses);
+		accessControlManager.buttonsSetEnabled(true);
 		cloudServicePanel.buttonsSetEnabled(true);
 		
 		setStatusText(true, "Successfully revoked access for the specified user.");
@@ -545,9 +537,7 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 	
 	@Override
 	public void sharingSucceeded(String cloudFileID, String fileName, String email) {
-		setStatusText(true, "Successfully shared \"" + fileName + "\" with \"" + email + "\".");
-		setProgressBarStatusValue(100);
-		cloudServicePanel.buttonsSetEnabled(true);
+		System.out.println("File sharing succeeded.");
 	}
 	
 	@Override
@@ -659,24 +649,33 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 		} else if ("download".equalsIgnoreCase(task.getName())) {
 			System.out.println(task.getName() + " completed.");
 		} else if ("share".equalsIgnoreCase(task.getName())) {
-			System.out.println(task.getName() + " completed.");
+			String fileName = (String) results[0];
+			String email = (String) results[1];
+			String[] emailAddresses = (String[]) results[2];
+			AccessControlManager accessControlManager = (AccessControlManager) results[3];
+			
+			accessControlManager.setEmailListContent(emailAddresses);
+			setStatusText(true, "Successfully shared \"" + fileName + "\" with \"" + email + "\".");
+			setProgressBarStatusValue(100);
+			cloudServicePanel.buttonsSetEnabled(true);
+			accessControlManager.buttonsSetEnabled(true);
 		} else if ("delete".equalsIgnoreCase(task.getName())) {
 			System.out.println(task.getName() + " completed.");
-		} else if ("requestForOpeningSecurityManager".equalsIgnoreCase(task.getName())) {
+		} else if ("requestForOpeningAccessControlManager".equalsIgnoreCase(task.getName())) {
 			String[] emailAddresses = (String[]) results[0];
 			CloudFileInformation fileInformation = (CloudFileInformation) results[1];
 			
-			openSecurityManager(emailAddresses, fileInformation);
-		} else if ("refreshSecurityInformation".equalsIgnoreCase(task.getName())) {
+			openAccessControlManager(emailAddresses, fileInformation);
+		} else if ("refreshAccessControlInformation".equalsIgnoreCase(task.getName())) {
 			String[] emailAddresses = (String[]) results[0];
-			SecurityManager securityManager = (SecurityManager) results[1];
+			AccessControlManager accessControlManager = (AccessControlManager) results[1];
 			
-			refreshSecurityInformation(emailAddresses, securityManager);
+			refreshAccessControlInformation(emailAddresses, accessControlManager);
 		} else if ("revokeAccess".equalsIgnoreCase(task.getName())) {
 			String[] emailAddresses = (String[]) results[0];
-			SecurityManager securityManager = (SecurityManager) results[1];
+			AccessControlManager accessControlManager = (AccessControlManager) results[1];
 			
-			fileAccessRevocationSucceeded(emailAddresses, securityManager);
+			fileAccessRevocationSucceeded(emailAddresses, accessControlManager);
 		}
 	}
 
@@ -733,31 +732,34 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 			setProgressBarStatusValue(0);
 			cloudServicePanel.buttonsSetEnabled(true);
 		} else if ("share".equalsIgnoreCase(task.getName())) {
+			AccessControlManager accessControlManager = (AccessControlManager) results[0];
+			
 			setStatusText(false, exception.getMessage());
 			setProgressBarStatusValue(0);
 			cloudServicePanel.buttonsSetEnabled(true);
+			accessControlManager.buttonsSetEnabled(true);
 		} else if ("delete".equalsIgnoreCase(task.getName())) {
 			setStatusText(false, exception.getMessage());
 			setProgressBarStatusValue(0);
 			cloudServicePanel.buttonsSetEnabled(true);
-		} else if ("requestForOpeningSecurityManager".equalsIgnoreCase(task.getName())) {
+		} else if ("requestForOpeningAccessControlManager".equalsIgnoreCase(task.getName())) {
 			setStatusText(false, exception.getMessage());
 			setProgressBarStatusValue(0);
 			cloudServicePanel.buttonsSetEnabled(true);
-		} else if ("refreshSecurityInformation".equalsIgnoreCase(task.getName())) {
-			SecurityManager securityManager = (SecurityManager) results[0];
+		} else if ("refreshAccessControlInformation".equalsIgnoreCase(task.getName())) {
+			AccessControlManager accessControlManager = (AccessControlManager) results[0];
 			
 			setStatusText(false, exception.getMessage());
 			setProgressBarStatusValue(0);
 			cloudServicePanel.buttonsSetEnabled(true);
-			securityManager.buttonsSetEnabled(true);
+			accessControlManager.buttonsSetEnabled(true);
 		} else if ("revokeAccess".equalsIgnoreCase(task.getName())) {
-			SecurityManager securityManager = (SecurityManager) results[0];
+			AccessControlManager accessControlManager = (AccessControlManager) results[0];
 			
 			setStatusText(false, exception.getMessage());
 			setProgressBarStatusValue(0);
 			cloudServicePanel.buttonsSetEnabled(true);
-			securityManager.buttonsSetEnabled(true);
+			accessControlManager.buttonsSetEnabled(true);
 		}
 	}
 	
@@ -863,22 +865,32 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 			} else if ("download".equalsIgnoreCase(button.getText())) {
 				download();
 			} else if ("share".equalsIgnoreCase(button.getText())) {
-				share();
+				requestForOpeningAccessControlManager();
 			} else if ("delete".equalsIgnoreCase(button.getText())) {
 				delete();
 			} else if ("sign out".equalsIgnoreCase(button.getText())) {
 				signOut();
 			}
-		} else if (event.getSource() instanceof CloudFile) {
+		} /*else if (event.getSource() instanceof CloudFile) {
 			if ("openSecurityManager".equalsIgnoreCase(event.getActionCommand()) &&
 					!progressBarStatus.isIndeterminate()) {
 				requestForOpeningSecurityManager();
 			}
-		} else if (event.getSource() instanceof SecurityManager) {
-			SecurityManager securityManager = (SecurityManager) event.getSource();
+		}*/ else if (event.getSource() instanceof AccessControlManager) {
+			AccessControlManager accessControlManager = (AccessControlManager) event.getSource();
 			
 			if ("refresh".equalsIgnoreCase(event.getActionCommand())) {
-				refreshSecurityInformation(securityManager);
+				refreshAccessControlInformation(accessControlManager);
+			} else if (event.getActionCommand().startsWith("share")) {
+				int indexOfHashCharacter = event.getActionCommand().indexOf('#');
+				
+				if (indexOfHashCharacter == -1) {
+					return;
+				}
+				
+				String email = event.getActionCommand().substring(indexOfHashCharacter + 1);
+				
+				share(email, accessControlManager);
 			} else if (event.getActionCommand().startsWith("delete")) {
 				int indexOfHashCharacter = event.getActionCommand().indexOf('#');
 				
@@ -888,7 +900,7 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 				
 				String email = event.getActionCommand().substring(indexOfHashCharacter + 1);
 				
-				requestForRevokingFileAccess(email, securityManager);
+				requestForRevokingFileAccess(email, accessControlManager);
 			}
 		}
 	}
