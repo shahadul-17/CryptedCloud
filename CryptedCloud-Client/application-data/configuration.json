@@ -6,9 +6,14 @@
 	"collection.initialCapacity": "1024",
 	"service.host": "http://localhost:8080/",
 	"aes.secretKeyLength": "16",
+	"rsa.keyLength": "2048",
 	"temporaryFilePath": "temporary-files",
 	"pbeKeySpec.iterationCount": "65536",
 	"encryptedRandomKey.signature.length": "5",
 	"encryptedRandomKey.signature.aes": "00000",
-	"encryptedRandomKey.signature.rsa": "00001"
+	"encryptedRandomKey.signature.rsa": "00001",
+	"randomKey.length.minimum": "64",
+	"randomKey.length.maximum": "128",
+	"randomKey.character.lowerBound": "33",
+	"randomKey.character.upperBound": "126"
 }

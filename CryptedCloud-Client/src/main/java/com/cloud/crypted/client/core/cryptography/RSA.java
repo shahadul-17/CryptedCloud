@@ -11,12 +11,12 @@ import java.util.Base64;
 
 import javax.crypto.Cipher;
 
+import com.cloud.crypted.client.core.Configuration;
+
 public class RSA {
 	
 	private PrivateKey privateKey;
 	private PublicKey publicKey;
-	
-	private static final short KEY_SIZE = 2048;
 	
 	public RSA() throws Exception {
 		generateKeyPair();
@@ -44,7 +44,7 @@ public class RSA {
 	
 	private void generateKeyPair() throws Exception {
 		KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-		keyPairGenerator.initialize(KEY_SIZE);
+		keyPairGenerator.initialize(Integer.parseInt(Configuration.get("rsa.keyLength")));
 		
 		KeyPair keyPair = keyPairGenerator.generateKeyPair();
 		

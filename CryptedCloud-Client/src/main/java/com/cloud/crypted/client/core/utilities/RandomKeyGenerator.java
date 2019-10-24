@@ -2,12 +2,9 @@ package com.cloud.crypted.client.core.utilities;
 
 import java.util.Random;
 
+import com.cloud.crypted.client.core.Configuration;
+
 public class RandomKeyGenerator {
-	
-	private static final int MINIMUM_LENGTH = 64;
-	private static final int MAXIMUM_LENGTH = 128;
-	private static final int MINIMUM_ASCII_VALUE = 33;
-	private static final int MAXIMUM_ASCII_VALUE = 126;
 	
 	private static final Random RANDOM = new Random(System.currentTimeMillis());
 	
@@ -16,11 +13,13 @@ public class RandomKeyGenerator {
 	}
 	
 	public static char[] generate() {
-		int length = generateRandomIntegerInRange(MINIMUM_LENGTH, MAXIMUM_LENGTH);
+		int length = generateRandomIntegerInRange(Integer.parseInt(Configuration.get("randomKey.length.minimum")),
+				Integer.parseInt(Configuration.get("randomKey.length.maximum")));
 		char[] randomKey = new char[length];
 		
 		for (int i = 0; i < length; i++) {
-			randomKey[i] = (char) generateRandomIntegerInRange(MINIMUM_ASCII_VALUE, MAXIMUM_ASCII_VALUE);
+			randomKey[i] = (char) generateRandomIntegerInRange(Integer.parseInt(Configuration.get("randomKey.character.lowerBound")),
+					Integer.parseInt(Configuration.get("randomKey.character.upperBound")));
 		}
 		
 		return randomKey;
