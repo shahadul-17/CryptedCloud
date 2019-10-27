@@ -1,0 +1,16 @@
+{
+	"status.maintenance": "Sorry, currently I am in 'maintenance' state. Please try again later.",
+	"unsupportedAPIVersion": "The requested API version is no longer supported.",
+	"userNotFound": "No user account associated with the specified email address.",
+	"userInformationRetrievalFailed": "An unexpected error occurred while retrieving user information.",
+	"invalidRequestID": "An unauthorized request detected.",
+	"userAlreadyExists": "A user with the specified 'email' already exists in database.",
+	"userInformationProcessingFailed": "An error occurred while processing user information.",
+	"invalidUserID": "An unexpected error occurred while processing user's unique identifier.",
+	"fileAlreadyExists": "A file with the specified 'cloudFileID' already exists in database.",
+	"fileInformationProcessingFailed": "An error occurred while processing file information.",
+	"fileNotFound": "No file associated with the specified 'cloudFileID'",
+	"alreadyHasFileAccess": "The requested user already has access to this file",
+	"invalidRequest": "Sorry, we were unable to handle your request",
+	"fileAccessInformationProcessingFailed": "An error occurred while processing file access information."
+}

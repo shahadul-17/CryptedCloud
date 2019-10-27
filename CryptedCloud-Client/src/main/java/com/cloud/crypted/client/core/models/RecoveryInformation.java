@@ -1,28 +1,28 @@
 package com.cloud.crypted.client.core.models;
 
-public class SecurityQuestionInformation {
+public class RecoveryInformation {
 	
-	private long securityQuestionID = 0L;
+	private long recoveryInformationID = 0L;
 	
 	private String question;
 	
 	private String hashedAnswer;
 	
-	public SecurityQuestionInformation() { }
+	public RecoveryInformation() { }
 	
-	public SecurityQuestionInformation(String question, String hashedAnswer) {
+	public RecoveryInformation(String question, String hashedAnswer) {
 		this.question = question;
 		this.hashedAnswer = hashedAnswer;
 	}
-
-	public long getSecurityQuestionID() {
-		return securityQuestionID;
+	
+	public long getRecoveryInformationID() {
+		return recoveryInformationID;
 	}
 	
-	public void setSecurityQuestionID(long securityQuestionID) {
-		this.securityQuestionID = securityQuestionID;
+	public void setRecoveryInformationID(long recoveryInformationID) {
+		this.recoveryInformationID = recoveryInformationID;
 	}
-
+	
 	public String getQuestion() {
 		return question;
 	}

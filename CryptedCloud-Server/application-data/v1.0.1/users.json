@@ -1,0 +1,17 @@
+{
+	"requestParameters": {
+		"get": [
+			{
+				"name": "email",
+				"type": "String",
+				"required": "true"
+			},
+			{
+				"name": "ping",
+				"type": "Boolean",
+				"required": "false"
+			}
+		]
+	}
+
+}

@@ -28,7 +28,7 @@ import com.cloud.crypted.client.core.Configuration;
 import com.cloud.crypted.client.core.events.GoogleDriveListener;
 import com.cloud.crypted.client.core.events.TaskListener;
 import com.cloud.crypted.client.core.models.CloudFileInformation;
-import com.cloud.crypted.client.core.models.SecurityQuestionInformation;
+import com.cloud.crypted.client.core.models.RecoveryInformation;
 import com.cloud.crypted.client.core.models.Task;
 import com.cloud.crypted.client.core.models.UserInformation;
 import com.cloud.crypted.client.core.services.BackgroundTask;
@@ -602,8 +602,8 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 			userInformation = (UserInformation) results[0];
 			
 			// FAILED DUE TO NO RECOVERY INFORMATION...
-			if (userInformation.getSecurityQuestionInformationList() == null ||
-					userInformation.getSecurityQuestionInformationList().size() == 0) {
+			if (userInformation.getRecoveryInformationList() == null ||
+					userInformation.getRecoveryInformationList().size() == 0) {
 				signInPanel.setErrorMessage("No account recovery information associated with your account.");
 				
 				setStatusText(false, "No account recovery information associated with your account.");
@@ -617,8 +617,8 @@ public class Frame extends JFrame implements GoogleDriveListener, TaskListener, 
 			
 			int i = 0;
 			
-			for (SecurityQuestionInformation securityQuestionInformation : userInformation.getSecurityQuestionInformationList()) {
-				securityQuestions[i] = securityQuestionInformation.getQuestion();
+			for (RecoveryInformation recoveryInformation : userInformation.getRecoveryInformationList()) {
+				securityQuestions[i] = recoveryInformation.getQuestion();
 				
 				i++;
 			}

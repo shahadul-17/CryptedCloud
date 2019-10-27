@@ -3,7 +3,6 @@ package com.cloud.crypted.client.core.services;
 import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 import com.cloud.crypted.client.Application;
 import com.cloud.crypted.client.core.Configuration;
@@ -13,8 +12,7 @@ import com.cloud.crypted.client.core.cryptography.RSA;
 import com.cloud.crypted.client.core.events.TaskListener;
 import com.cloud.crypted.client.core.models.CloudFileInformation;
 import com.cloud.crypted.client.core.models.FileAccessInformation;
-import com.cloud.crypted.client.core.models.FileInformation;
-import com.cloud.crypted.client.core.models.SecurityQuestionInformation;
+import com.cloud.crypted.client.core.models.RecoveryInformation;
 import com.cloud.crypted.client.core.models.Task;
 import com.cloud.crypted.client.core.models.UserInformation;
 import com.cloud.crypted.client.core.utilities.RandomKeyGenerator;
@@ -150,14 +148,14 @@ public class BackgroundTask implements Task {
 		String[] answers = (String[]) parameters[0];
 		UserInformation userInformation = (UserInformation) parameters[1];
 		
-		List<SecurityQuestionInformation> securityQuestionInformationList = userInformation.getSecurityQuestionInformationList();
+		List<RecoveryInformation> recoveryInformationList = userInformation.getRecoveryInformationList();
 		
 		int i = 0;
 		
-		for (SecurityQuestionInformation securityQuestionInformation : securityQuestionInformationList) {
+		for (RecoveryInformation recoveryInformation : recoveryInformationList) {
 			answers[i] = answers[i].trim().toLowerCase();
 			
-			if (!BCrypt.checkpw(answers[i], securityQuestionInformation.getHashedAnswer())) {
+			if (!BCrypt.checkpw(answers[i], recoveryInformation.getHashedAnswer())) {
 				throw new Exception("Incorrect recovery information provided.");
 			}
 			
@@ -212,7 +210,7 @@ public class BackgroundTask implements Task {
 		}
 		
 		// update file info...
-		returnValue = cryptedCloudService.getFileAccessInformationSetByEmail(userInformation.getEmail());
+		returnValue = cryptedCloudService.getFileAccessInformationListByEmail(userInformation.getEmail());
 		
 		if (returnValue instanceof String) {
 			throw new Exception((String) returnValue);
@@ -221,9 +219,9 @@ public class BackgroundTask implements Task {
 		int encryptedRandomKeySignatureLength = Integer.parseInt(Configuration.get("encryptedRandomKey.signature.length"));
 		
 		@SuppressWarnings("unchecked")
-		Set<FileAccessInformation> fileAccessInformationSet = (Set<FileAccessInformation>) returnValue;
+		List<FileAccessInformation> fileAccessInformationList = (List<FileAccessInformation>) returnValue;
 		
-		for (FileAccessInformation fileAccessInformation : fileAccessInformationSet) {
+		for (FileAccessInformation fileAccessInformation : fileAccessInformationList) {
 			String encryptedRandomKeySignature = fileAccessInformation.getEncryptedRandomKey().substring(0, encryptedRandomKeySignatureLength);
 			String encryptedRandomKeyWithoutSignature = fileAccessInformation.getEncryptedRandomKey().substring(encryptedRandomKeySignatureLength);
 			
@@ -272,21 +270,12 @@ public class BackgroundTask implements Task {
 			return;
 		}
 		
-		Object returnValue = cryptedCloudService.saveFileInformation(new FileInformation(0L, cloudFileID));
-		
-		if (returnValue instanceof String) {
-			throw new Exception((String) returnValue);
-		}
-		
 		String encryptedRandomKey = Configuration.get("encryptedRandomKey.signature.aes")
 				+ AES.encrypt(passphrase, new String(randomKey));
-		FileInformation fileInformation = (FileInformation) returnValue;
-		FileAccessInformation fileAccessInformation = new FileAccessInformation(
-			googleDriveService.getGoogleDriveUser().getEmail(),
-			fileInformation.getCloudFileID(), "owner", encryptedRandomKey
-		);
 		
-		returnValue = cryptedCloudService.saveFileAccessInformation(fileAccessInformation);
+		Object returnValue = cryptedCloudService.saveFileInformation(
+			googleDriveService.getGoogleDriveUser().getEmail(), cloudFileID,
+			"owner", encryptedRandomKey);
 		
 		if (returnValue instanceof String) {
 			throw new Exception((String) returnValue);
@@ -454,7 +443,7 @@ public class BackgroundTask implements Task {
 			FileAccessInformation fileAccessInformation = (FileAccessInformation) returnValue;
 			
 			if ("owner".equalsIgnoreCase(fileAccessInformation.getUserRole())) {
-				returnValue = cryptedCloudService.deleteFileAccessInformationSet(fileAccessInformation.getCloudFileID());
+				returnValue = cryptedCloudService.deleteFileAccessInformationList(fileAccessInformation.getCloudFileID());
 				
 				if (returnValue instanceof String) {
 					throw new Exception((String) returnValue);
@@ -478,20 +467,20 @@ public class BackgroundTask implements Task {
 	private String[] retrieveEmailAddressesFromFileInformation(String email,
 			CloudFileInformation fileInformation,
 			CryptedCloudService cryptedCloudService) throws Exception {
-		Object returnValue = cryptedCloudService.getFileAccessInformationSetByCloudFileID(fileInformation.getID());
+		Object returnValue = cryptedCloudService.getFileAccessInformationListByCloudFileID(fileInformation.getID());
 		
 		if (returnValue instanceof String) {
 			throw new Exception((String) returnValue);
 		}
 		
 		@SuppressWarnings("unchecked")
-		Set<FileAccessInformation> fileAccessInformationSet = (Set<FileAccessInformation>) returnValue;
-		String[] emailAddresses = new String[fileAccessInformationSet.size()];
+		List<FileAccessInformation> fileAccessInformationList = (List<FileAccessInformation>) returnValue;
+		String[] emailAddresses = new String[fileAccessInformationList.size()];
 		
 		boolean isOwner = false;
 		int i = 0;
 		
-		for (FileAccessInformation fileAccessInformation : fileAccessInformationSet) {
+		for (FileAccessInformation fileAccessInformation : fileAccessInformationList) {
 			if (email.equalsIgnoreCase(fileAccessInformation.getEmail())) {
 				if (email.equalsIgnoreCase(fileAccessInformation.getEmail()) &&
 						"owner".equalsIgnoreCase(fileAccessInformation.getUserRole())) {
@@ -653,7 +642,7 @@ public class BackgroundTask implements Task {
 					return null;
 				}
 				
-				userInformation.addSecurityQuestionInformation(securityQuestionAndAnswerArray[i], BCrypt.hashpw(securityQuestionAndAnswerArray[i + 1], BCrypt.gensalt()));
+				userInformation.addRecoveryInformation(securityQuestionAndAnswerArray[i], BCrypt.hashpw(securityQuestionAndAnswerArray[i + 1], BCrypt.gensalt()));
 			}
 			
 			userInformation.setEncryptedPassphrase(encryptedPassphrase);
