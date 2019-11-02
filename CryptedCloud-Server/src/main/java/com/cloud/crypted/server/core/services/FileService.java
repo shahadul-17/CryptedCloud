@@ -12,8 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.cloud.crypted.server.Application;
-import com.cloud.crypted.server.core.Configuration;
-import com.cloud.crypted.server.core.ErrorMessages;
+import com.cloud.crypted.server.core.DynamicResources;
 import com.cloud.crypted.server.core.models.File;
 import com.cloud.crypted.server.core.models.FileAccess;
 import com.cloud.crypted.server.core.models.FileAccessID;
@@ -82,15 +81,15 @@ public class FileService {
 			} catch (Exception exception) {
 				exception.printStackTrace();
 				
-				errorMessage = ErrorMessages.get("fileInformationProcessingFailed");
+				errorMessage = DynamicResources.getErrorMessage("fileInformationProcessingFailed");
 			}
 		} else {
-			errorMessage = ErrorMessages.get("fileNotFound");
+			errorMessage = DynamicResources.getErrorMessage("fileNotFound");
 		}
 		
 		if (!StringUtilities.isNullOrEmpty(errorMessage)) {
-			response = new HashMap<Object, Object>(Integer.parseInt(
-					Configuration.get("collection.minimumCapacity")));
+			response = new HashMap<Object, Object>(
+					(int) DynamicResources.getConfiguration("collection.minimumCapacity"));
 			response.put("errorMessage", errorMessage);
 		}
 		
@@ -101,16 +100,16 @@ public class FileService {
 		String errorMessage = null;
 		User user = userService.getUserInstance(email);
 		File file = getFileInstance(cloudFileID);
-		Map<Object, Object> response = new HashMap<Object, Object>(Integer.parseInt(
-				Configuration.get("collection.initialCapacity")));
+		Map<Object, Object> response = new HashMap<Object, Object>(
+				(int) DynamicResources.getConfiguration("collection.initialCapacity"));
 		
 		if (!StringUtilities.isNullOrEmpty(email) && !StringUtilities.isNullOrEmpty(cloudFileID)) {
 			if (user == null) {
-				errorMessage = ErrorMessages.get("userNotFound");
+				errorMessage = DynamicResources.getErrorMessage("userNotFound");
 			}
 			
 			if (file == null) {
-				errorMessage = ErrorMessages.get("fileNotFound");
+				errorMessage = DynamicResources.getErrorMessage("fileNotFound");
 			}
 			
 			if (StringUtilities.isNullOrEmpty(errorMessage)) {
@@ -133,28 +132,28 @@ public class FileService {
 					} catch (Exception exception) {
 						exception.printStackTrace();
 						
-						errorMessage = ErrorMessages.get("fileAccessInformationProcessingFailed");
+						errorMessage = DynamicResources.getErrorMessage("fileAccessInformationProcessingFailed");
 					}
 				} else {
-					errorMessage = ErrorMessages.get("fileNotFound");
+					errorMessage = DynamicResources.getErrorMessage("fileNotFound");
 				}
 			}
 		} else if (StringUtilities.isNullOrEmpty(email) && !StringUtilities.isNullOrEmpty(cloudFileID)) {		//delete file access list by cloud file id...
 			if (file == null) {
-				errorMessage = ErrorMessages.get("fileNotFound");
+				errorMessage = DynamicResources.getErrorMessage("fileNotFound");
 			} else {
 				response.put("fileAccessInformationList", populateFileAccessInformationList(
 						fileAccessRepository.findByFileAccessIDFileID(file.getFileID())));
 			}
 		} else if (!StringUtilities.isNullOrEmpty(email) && StringUtilities.isNullOrEmpty(cloudFileID)) {		// delete  file access list by email...
 			if (user == null) {
-				errorMessage = ErrorMessages.get("userNotFound");
+				errorMessage = DynamicResources.getErrorMessage("userNotFound");
 			} else {
 				response.put("fileAccessInformationList", populateFileAccessInformationList(
 						fileAccessRepository.findByFileAccessIDUserID(user.getUserID())));
 			}
 		} else {
-			errorMessage = ErrorMessages.get("invalidRequest");
+			errorMessage = DynamicResources.getErrorMessage("invalidRequest");
 		}
 		
 		if (!StringUtilities.isNullOrEmpty(errorMessage)) {
@@ -177,12 +176,12 @@ public class FileService {
 		
 		if (StringUtilities.isNullOrEmpty(errorMessage)) {
 			if (exists(email, cloudFileID)) {
-				errorMessage = ErrorMessages.get("alreadyHasFileAccess");
+				errorMessage = DynamicResources.getErrorMessage("alreadyHasFileAccess");
 			} else {
 				User user = userService.getUserInstance(email);
 				
 				if (user == null) {
-					errorMessage = ErrorMessages.get("userNotFound");
+					errorMessage = DynamicResources.getErrorMessage("userNotFound");
 				}
 				
 				if (file == null) {
@@ -207,14 +206,13 @@ public class FileService {
 				} catch (Exception exception) {
 					exception.printStackTrace();
 					
-					errorMessage = ErrorMessages.get("fileInformationProcessingFailed");
+					errorMessage = DynamicResources.getErrorMessage("fileInformationProcessingFailed");
 				}
 			}
 		}
 		
 		if (!StringUtilities.isNullOrEmpty(errorMessage)) {
-			response = new HashMap<Object, Object>(Integer.parseInt(
-					Configuration.get("collection.minimumCapacity")));
+			response = new HashMap<Object, Object>((int) DynamicResources.getConfiguration("collection.minimumCapacity"));
 			response.put("errorMessage", errorMessage);
 		}
 		
@@ -229,18 +227,17 @@ public class FileService {
 	public Map<?, ?> delete(String email, String cloudFileID) {
 		User user = userService.getUserInstance(email);
 		File file = getFileInstance(cloudFileID);
-		Map<Object, Object> response = new HashMap<Object, Object>(Integer.parseInt(
-				Configuration.get("collection.minimumCapacity")));
+		Map<Object, Object> response = new HashMap<Object, Object>((int) DynamicResources.getConfiguration("collection.minimumCapacity"));
 		
 		if (!StringUtilities.isNullOrEmpty(email) && !StringUtilities.isNullOrEmpty(cloudFileID)) {
 			String errorMessage = null;
 			
 			if (user == null) {
-				errorMessage = ErrorMessages.get("userNotFound");
+				errorMessage = DynamicResources.getErrorMessage("userNotFound");
 			}
 			
 			if (file == null) {
-				errorMessage = ErrorMessages.get("fileNotFound");
+				errorMessage = DynamicResources.getErrorMessage("fileNotFound");
 			}
 			
 			if (StringUtilities.isNullOrEmpty(errorMessage)) {
@@ -254,19 +251,19 @@ public class FileService {
 			}
 		} else if (StringUtilities.isNullOrEmpty(email) && !StringUtilities.isNullOrEmpty(cloudFileID)) {		//delete file access list by cloud file id...
 			if (file == null) {
-				response.put("errorMessage", ErrorMessages.get("fileNotFound"));
+				response.put("errorMessage", DynamicResources.getErrorMessage("fileNotFound"));
 			} else {
 				fileAccessRepository.deleteByFileAccessIDFileID(file.getFileID());
 				delete(cloudFileID);
 			}
 		} else if (!StringUtilities.isNullOrEmpty(email) && StringUtilities.isNullOrEmpty(cloudFileID)) {		// delete  file access list by email...
 			if (user == null) {
-				response.put("errorMessage", ErrorMessages.get("userNotFound"));
+				response.put("errorMessage", DynamicResources.getErrorMessage("userNotFound"));
 			} else {
 				fileAccessRepository.deleteByFileAccessIDUserID(user.getUserID());
 			}
 		} else {
-			response.put("errorMessage", ErrorMessages.get("invalidRequest"));
+			response.put("errorMessage", DynamicResources.getErrorMessage("invalidRequest"));
 		}
 		
 		return response;
@@ -278,8 +275,7 @@ public class FileService {
 		
 		for (FileAccess fileAccess : fileAccessList) {
 			Map<String, String> fileAccessInformation =
-					new HashMap<String, String>(Integer.parseInt(
-							Configuration.get("collection.initialCapacity")));
+					new HashMap<String, String>((int) DynamicResources.getConfiguration("collection.initialCapacity"));
 			fileAccessInformation.put("userRole", fileAccess.getUserRole());
 			fileAccessInformation.put("encryptedRandomKey", fileAccess.getEncryptedRandomKey());
 			fileAccessInformation.put("email", fileAccess.getUser().getEmail());

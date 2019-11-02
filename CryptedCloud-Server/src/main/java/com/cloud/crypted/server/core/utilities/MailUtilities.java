@@ -11,24 +11,24 @@ import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
-import com.cloud.crypted.server.core.Configuration;
+import com.cloud.crypted.server.core.DynamicResources;
 
 public final class MailUtilities {
 	
 	public static boolean sendMail(String recipientEmail, String subject, String mailBody) {
 		Properties properties = new Properties();
-		properties.put("mail.smtp.host", Configuration.get("mail.smtp.host"));
-		properties.put("mail.smtp.port", Integer.parseInt(Configuration.get("mail.smtp.port")));
-		properties.put("mail.smtp.auth", Configuration.get("mail.smtp.auth"));
-		properties.put("mail.smtp.starttls.enable", Configuration.get("mail.smtp.starttls.enable"));
+		properties.put("mail.smtp.host", DynamicResources.getConfiguration("mail.smtp.host"));
+		properties.put("mail.smtp.port", (int) DynamicResources.getConfiguration("mail.smtp.port"));
+		properties.put("mail.smtp.auth", DynamicResources.getConfiguration("mail.smtp.auth"));
+		properties.put("mail.smtp.starttls.enable", DynamicResources.getConfiguration("mail.smtp.starttls.enable"));
 		
 		Session session = Session.getInstance(properties, new Authenticator() {
 			
 			@Override
 			protected PasswordAuthentication getPasswordAuthentication() {
 				return new PasswordAuthentication(
-					Configuration.get("mail.senderEmail"),
-					Configuration.get("mail.senderPassword")
+					(String) DynamicResources.getConfiguration("mail.senderEmail"),
+					(String) DynamicResources.getConfiguration("mail.senderPassword")
 				);
 			}
 		});
@@ -36,11 +36,11 @@ public final class MailUtilities {
 		Message message = new MimeMessage(session);
 		
 		try {
-			message.setFrom(new InternetAddress(Configuration.get("mail.senderEmail"),
-					Configuration.get("mail.senderName")));
+			message.setFrom(new InternetAddress((String) DynamicResources.getConfiguration("mail.senderEmail"),
+					(String) DynamicResources.getConfiguration("mail.senderName")));
 			message.setRecipient(RecipientType.TO, new InternetAddress(recipientEmail));
 			message.setSubject(subject);
-            message.setText(mailBody);
+            message.setContent(mailBody, "text/html; charset=utf-8");
             
             Transport.send(message);
             

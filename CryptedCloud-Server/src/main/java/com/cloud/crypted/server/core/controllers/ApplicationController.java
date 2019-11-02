@@ -17,8 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 
 import com.cloud.crypted.server.Application;
-import com.cloud.crypted.server.core.Configuration;
-import com.cloud.crypted.server.core.ErrorMessages;
+import com.cloud.crypted.server.core.DynamicResources;
 import com.cloud.crypted.server.core.utilities.FileUtilities;
 import com.cloud.crypted.server.core.utilities.RequestIDProvider;
 import com.cloud.crypted.server.core.utilities.StringUtilities;
@@ -31,17 +30,18 @@ public class ApplicationController {
 	public Object get(@PathVariable(name="version") String version,
 			@PathVariable(name="resourceName") String resourceName,
 			@RequestParam(required=true) Map<String, String> requestParameters) {
-		Map<String, String> response = new HashMap<String, String>(Integer.parseInt(Configuration.get("collection.initialCapacity")));
+		Map<String, String> response = new HashMap<String, String>(
+				(int) DynamicResources.getConfiguration("collection.initialCapacity"));
 		
-		if (!StringUtilities.isNullOrEmpty(Configuration.get("status"))) {
-			response.put("errorMessage", ErrorMessages.get("status.maintenance"));
+		if (!StringUtilities.isNullOrEmpty((String) DynamicResources.getConfiguration("status"))) {
+			response.put("errorMessage", DynamicResources.getErrorMessage("status.maintenance"));
 			
 			return response;
 		}
 		
 		// we could've included the 'v' in path variable, 'version'...
-		if (!FileUtilities.directoryExists(Application.APPLICATION_DATA_DIRECTORY + "v" + version)) {
-			response.put("errorMessage", ErrorMessages.get("unsupportedAPIVersion"));
+		if (!FileUtilities.directoryExists(Application.DYNAMIC_RESOURCES_DIRECTORY_PATH + "v" + version)) {
+			response.put("errorMessage", DynamicResources.getErrorMessage("unsupportedAPIVersion"));
 			
 			return response;
 		}
@@ -58,18 +58,18 @@ public class ApplicationController {
 			@PathVariable(name="resourceName") String resourceName,
 			@RequestBody(required=true) Map<String, Object> requestBody,
 			HttpSession httpSession) {
-		Map<String, String> response = new HashMap<String, String>(Integer.parseInt(Configuration.get("collection.initialCapacity")));
+		Map<String, String> response = new HashMap<String, String>((int) DynamicResources.getConfiguration("collection.initialCapacity"));
 		
-		if (!StringUtilities.isNullOrEmpty(Configuration.get("status"))) {
-			response.put("errorMessage", ErrorMessages.get("status.maintenance"));
+		if (!StringUtilities.isNullOrEmpty((String) DynamicResources.getConfiguration("status"))) {
+			response.put("errorMessage", DynamicResources.getErrorMessage("status.maintenance"));
 			
 			return response;
 		}
 		
 		// we could've included the 'v' in path variable, 'version'...
 		// but this is our design choice...
-		if (!FileUtilities.directoryExists(Application.APPLICATION_DATA_DIRECTORY + "v" + version)) {
-			response.put("errorMessage", ErrorMessages.get("unsupportedAPIVersion"));
+		if (!FileUtilities.directoryExists(Application.DYNAMIC_RESOURCES_DIRECTORY_PATH + "v" + version)) {
+			response.put("errorMessage", DynamicResources.getErrorMessage("unsupportedAPIVersion"));
 			
 			return response;
 		}
@@ -88,18 +88,19 @@ public class ApplicationController {
 			@PathVariable(name="resourceName") String resourceName,
 			@RequestBody(required=true) Map<String, Object> requestBody,
 			HttpSession httpSession) {
-		Map<String, String> response = new HashMap<String, String>(Integer.parseInt(Configuration.get("collection.initialCapacity")));
+		Map<String, String> response = new HashMap<String, String>(
+				(int) DynamicResources.getConfiguration("collection.initialCapacity"));
 		
-		if (!StringUtilities.isNullOrEmpty(Configuration.get("status"))) {
-			response.put("errorMessage", ErrorMessages.get("status.maintenance"));
+		if (!StringUtilities.isNullOrEmpty((String) DynamicResources.getConfiguration("status"))) {
+			response.put("errorMessage", DynamicResources.getErrorMessage("status.maintenance"));
 			
 			return response;
 		}
 		
 		// we could've included the 'v' in path variable, 'version'...
 		// but this is our design choice...
-		if (!FileUtilities.directoryExists(Application.APPLICATION_DATA_DIRECTORY + "v" + version)) {
-			response.put("errorMessage", ErrorMessages.get("unsupportedAPIVersion"));
+		if (!FileUtilities.directoryExists(Application.DYNAMIC_RESOURCES_DIRECTORY_PATH + "v" + version)) {
+			response.put("errorMessage", DynamicResources.getErrorMessage("unsupportedAPIVersion"));
 			
 			return response;
 		}
@@ -117,17 +118,18 @@ public class ApplicationController {
 	public Object delete(@PathVariable(name="version") String version,
 			@PathVariable(name="resourceName") String resourceName,
 			@RequestParam(required=true) Map<String, String> requestParameters) {
-		Map<String, String> response = new HashMap<String, String>(Integer.parseInt(Configuration.get("collection.initialCapacity")));
+		Map<String, String> response = new HashMap<String, String>(
+				(int) DynamicResources.getConfiguration("collection.initialCapacity"));
 		
-		if (!StringUtilities.isNullOrEmpty(Configuration.get("status"))) {
-			response.put("errorMessage", ErrorMessages.get("status.maintenance"));
+		if (!StringUtilities.isNullOrEmpty((String) DynamicResources.getConfiguration("status"))) {
+			response.put("errorMessage", DynamicResources.getErrorMessage("status.maintenance"));
 			
 			return response;
 		}
 		
 		// we could've included the 'v' in path variable, 'version'...
-		if (!FileUtilities.directoryExists(Application.APPLICATION_DATA_DIRECTORY + "v" + version)) {
-			response.put("errorMessage", ErrorMessages.get("unsupportedAPIVersion"));
+		if (!FileUtilities.directoryExists(Application.DYNAMIC_RESOURCES_DIRECTORY_PATH + "v" + version)) {
+			response.put("errorMessage", DynamicResources.getErrorMessage("unsupportedAPIVersion"));
 			
 			return response;
 		}

@@ -9,11 +9,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.cloud.crypted.server.Application;
-import com.cloud.crypted.server.core.Configuration;
-import com.cloud.crypted.server.core.ErrorMessages;
+import com.cloud.crypted.server.core.DynamicResources;
 import com.cloud.crypted.server.core.models.RecoveryInformation;
 import com.cloud.crypted.server.core.models.User;
 import com.cloud.crypted.server.core.repositories.UserRepository;
+import com.cloud.crypted.server.core.utilities.MailUtilities;
 import com.cloud.crypted.server.core.utilities.StringUtilities;
 
 @Service
@@ -63,16 +63,43 @@ public class UserService {
 			} catch (Exception exception) {
 				exception.printStackTrace();
 				
-				errorMessage = ErrorMessages.get("userDataRetrievalFailed");
+				errorMessage = DynamicResources.getErrorMessage("userDataRetrievalFailed");
 			}
 		} else {
-			errorMessage = ErrorMessages.get("userNotFound");
+			errorMessage = DynamicResources.getErrorMessage("userNotFound");
 		}
 		
 		if (!StringUtilities.isNullOrEmpty(errorMessage)) {
-			response = new HashMap<Object, Object>(Integer.parseInt(
-					Configuration.get("collection.minimumCapacity")));
+			response = new HashMap<Object, Object>((int) DynamicResources.getConfiguration("collection.minimumCapacity"));
 			response.put("errorMessage", errorMessage);
+		}
+		
+		return response;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Map<?, ?> get(String email, String requesterEmail, String requesterName) {
+		Map<?, ?> response = get(email);
+		
+		if (response.containsKey("errorMessage")) {
+			String title = (String) DynamicResources.getConfiguration("title");
+			String mailBody = String.format(
+				DynamicResources.getEmailTemplate("userRegistrationRequest"),
+				title,
+				requesterEmail, requesterName, "Google Drive",
+				title, title
+			);
+			
+			String errorMessage;
+			
+			if (MailUtilities.sendMail(email,
+					(String) DynamicResources.getConfiguration("mail.subject.userRegistrationRequest"), mailBody)) {
+				errorMessage = DynamicResources.getErrorMessage("registrationRequestEmailSentSuccessfully");
+			} else {
+				errorMessage = DynamicResources.getErrorMessage("registrationRequestEmailSendingFailed");
+			}
+			
+			((Map<String, String>) response).put("errorMessage", errorMessage);
 		}
 		
 		return response;
@@ -86,7 +113,7 @@ public class UserService {
 		Map<Object, Object> response = null;
 		
 		if (exists(email)) {
-			errorMessage = ErrorMessages.get("userAlreadyExists");
+			errorMessage = DynamicResources.getErrorMessage("userAlreadyExists");
 		} else {
 			User user = new User(
 				0, cloudService, email, hashedPassphrase,
@@ -102,13 +129,12 @@ public class UserService {
 			} catch (Exception exception) {
 				exception.printStackTrace();
 				
-				errorMessage = ErrorMessages.get("userInformationProcessingFailed");
+				errorMessage = DynamicResources.getErrorMessage("userInformationProcessingFailed");
 			}
 		}
 		
 		if (!StringUtilities.isNullOrEmpty(errorMessage)) {
-			response = new HashMap<Object, Object>(Integer.parseInt(
-					Configuration.get("collection.minimumCapacity")));
+			response = new HashMap<Object, Object>((int) DynamicResources.getConfiguration("collection.minimumCapacity"));
 			response.put("errorMessage", errorMessage);
 		}
 		
@@ -139,7 +165,7 @@ public class UserService {
 				} else {
 					// impossible scenario... :P :P
 					// still just for safety...
-					errorMessage = ErrorMessages.get("invalidUserID");
+					errorMessage = DynamicResources.getErrorMessage("invalidUserID");
 				}
 			} else {
 				user = new User(
@@ -158,16 +184,15 @@ public class UserService {
 				} catch (Exception exception) {
 					exception.printStackTrace();
 					
-					errorMessage = ErrorMessages.get("userInformationProcessingFailed");
+					errorMessage = DynamicResources.getErrorMessage("userInformationProcessingFailed");
 				}
 			}
 		} else {
-			errorMessage = ErrorMessages.get("userNotFound");
+			errorMessage = DynamicResources.getErrorMessage("userNotFound");
 		}
 		
 		if (!StringUtilities.isNullOrEmpty(errorMessage)) {
-			response = new HashMap<Object, Object>(Integer.parseInt(
-					Configuration.get("collection.minimumCapacity")));
+			response = new HashMap<Object, Object>((int) DynamicResources.getConfiguration("collection.minimumCapacity"));
 			response.put("errorMessage", errorMessage);
 		}
 		

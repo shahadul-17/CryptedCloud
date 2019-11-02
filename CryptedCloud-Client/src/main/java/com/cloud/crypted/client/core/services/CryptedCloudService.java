@@ -176,17 +176,17 @@ public class CryptedCloudService {
 	}
 	
 	public Object getUserInformation(String email) {
-		return getUserInformation(email, false, null, null);
+		return getUserInformation(email, null, null);
 	}
 	
-	public Object getUserInformation(String email, boolean sendEmail, String requesterName, String requesterEmail) {
+	public Object getUserInformation(String email, String requesterName, String requesterEmail) {
 		StringBuilder responseBuilder = new StringBuilder(Integer.parseInt(Configuration.get("collection.initialCapacity")));
 		
 		String url = Configuration.get("service.host") + "v" + Configuration.get("version") + '/' + "users?email=" + email;
 		
-		if (sendEmail && !StringUtilities.isNullOrEmpty(requesterName) &&
+		if (!StringUtilities.isNullOrEmpty(requesterName) &&
 				!StringUtilities.isNullOrEmpty(requesterEmail)) {
-			url += "&sendEmail=" + sendEmail + "&requesterName=" + requesterName + "&requesterEmail=" + requesterEmail;
+			url += "&requesterName=" + requesterName + "&requesterEmail=" + requesterEmail;
 		}
 		
 		if (sendHTTPRequest("GET", url, (String) null, responseBuilder) == 200) {

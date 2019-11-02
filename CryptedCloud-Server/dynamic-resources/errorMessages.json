@@ -12,5 +12,7 @@
 	"fileNotFound": "No file associated with the specified 'cloudFileID'",
 	"alreadyHasFileAccess": "The requested user already has access to this file",
 	"invalidRequest": "Sorry, we were unable to handle your request",
-	"fileAccessInformationProcessingFailed": "An error occurred while processing file access information."
+	"fileAccessInformationProcessingFailed": "An error occurred while processing file access information.",
+	"registrationRequestEmailSentSuccessfully": "No user account associated with the specified email address. A request is sent via email for registration.",
+	"registrationRequestEmailSendingFailed": "No user account associated with the specified email address. Registration request sending also failed."
 }

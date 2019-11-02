@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.cloud.crypted.server.core.ErrorMessages;
+import com.cloud.crypted.server.core.DynamicResources;
 import com.cloud.crypted.server.core.services.FileService;
 import com.cloud.crypted.server.core.utilities.RequestIDProvider;
 import com.cloud.crypted.server.core.utilities.StringUtilities;
@@ -31,7 +31,7 @@ public class FileController {
 			RequestIDProvider.remove(requestID);
 			
 			Map<String, String> response = new HashMap<String, String>();
-			response.put("errorMessage", ErrorMessages.get("invalidRequestID"));
+			response.put("errorMessage", DynamicResources.getErrorMessage("invalidRequestID"));
 			
 			return response;
 		}
@@ -68,7 +68,7 @@ public class FileController {
 			RequestIDProvider.remove(requestID);
 			
 			Map<String, String> response = new HashMap<String, String>();
-			response.put("errorMessage", ErrorMessages.get("invalidRequestID"));
+			response.put("errorMessage", DynamicResources.getErrorMessage("invalidRequestID"));
 			
 			return response;
 		}
@@ -98,7 +98,7 @@ public class FileController {
 			RequestIDProvider.remove(requestID);
 			
 			Map<String, String> response = new HashMap<String, String>();
-			response.put("errorMessage", ErrorMessages.get("invalidRequestID"));
+			response.put("errorMessage", DynamicResources.getErrorMessage("invalidRequestID"));
 			
 			return response;
 		}

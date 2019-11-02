@@ -4,14 +4,14 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
-import com.cloud.crypted.server.core.Configuration;
+import com.cloud.crypted.server.core.DynamicResources;
 
 public class RequestIDProvider {
 	
 	private static final Random RANDOM = new Random(System.currentTimeMillis());
 	
 	private static final Set<String> REQUEST_IDs = new HashSet<String>(
-			Integer.parseInt(Configuration.get("collection.initialCapacity")));
+			(int) DynamicResources.getConfiguration("collection.initialCapacity"));
 	
 	private static int generateRandomIntegerInRange(int lowerBound, int upperBound) {
 		return RANDOM.nextInt((upperBound - lowerBound) + 1) + lowerBound;
@@ -21,13 +21,13 @@ public class RequestIDProvider {
 		String requestID = null;
 		
 		do {
-			int length = generateRandomIntegerInRange(Integer.parseInt(Configuration.get("requestID.length.minimum")),
-					Integer.parseInt(Configuration.get("requestID.length.maximum")));
+			int length = generateRandomIntegerInRange((int) DynamicResources.getConfiguration("requestID.length.minimum"),
+					(int) DynamicResources.getConfiguration("requestID.length.maximum"));
 			char[] randomCharacters = new char[length];
 			
 			for (int i = 0; i < length; i++) {
-				randomCharacters[i] = (char) generateRandomIntegerInRange(Integer.parseInt(Configuration.get("requestID.character.lowerBound")),
-						Integer.parseInt(Configuration.get("requestID.character.upperBound")));
+				randomCharacters[i] = (char) generateRandomIntegerInRange((int) DynamicResources.getConfiguration("requestID.character.lowerBound"),
+						(int) DynamicResources.getConfiguration("requestID.character.upperBound"));
 			}
 			
 			requestID = new String(randomCharacters);

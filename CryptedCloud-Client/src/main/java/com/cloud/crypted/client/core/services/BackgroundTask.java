@@ -387,7 +387,7 @@ public class BackgroundTask implements Task {
 			// if user is the owner of this file, then he/she is allowed to share...
 			if ("owner".equalsIgnoreCase(fileAccessInformation.getUserRole())) {
 				// getting information of user with whom the file will be shared...
-				returnValue = cryptedCloudService.getUserInformation(emailToShare, true,
+				returnValue = cryptedCloudService.getUserInformation(emailToShare,
 					googleDriveService.getGoogleDriveUser().getFirstName(),
 					googleDriveService.getGoogleDriveUser().getEmail()
 				);
